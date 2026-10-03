@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: flowguard-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: flowguard-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always
+
+  graph-engine:
+    build: ./graph-engine
+    container_name: flowguard-graph-engine
+    ports:
+      - "8000:8000"
+    restart: always
+
+  ml-engine:
+    build: ./ml
+    container_name: flowguard-ml-engine
+    ports:
+      - "8001:8001"
+    restart: always
