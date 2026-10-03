@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
     container_name: flowguard-backend
     ports:
-      - "5000:5000"
+      - "5001:5000"   # Changed host port from 5000 to 5001
     environment:
       - PORT=5000
     restart: always
@@ -14,7 +12,7 @@ services:
     build: ./frontend
     container_name: flowguard-frontend
     ports:
-      - "3000:80"
+      - "3001:80"     # Changed host port from 3000 to 3001
     depends_on:
       - backend
     restart: always
