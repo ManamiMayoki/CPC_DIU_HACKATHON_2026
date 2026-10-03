@@ -1,0 +1,41 @@
+name: FlowGuard AI CI/CD
+
+on:
+  push:
+    branches: [ development, main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install & Test Backend
+        run: |
+          cd backend
+          npm install
+
+      - name: Install & Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python Engine Dependencies
+        run: |
+          cd graph-engine && pip install -r requirements.txt
+          cd ../ml && pip install -r requirements.txt
