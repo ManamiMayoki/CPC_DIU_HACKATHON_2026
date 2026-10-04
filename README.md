@@ -1,10 +1,4 @@
-# FlowGuard AI: Graph Detection & ML Risk Engine
-
-> **CPC DIU HACKATHON 2026**  
-> **Implemented Roles:**  
-> - **MEMBER 2:** Graph Algorithms & Network Detection  
-> - **MEMBER 3:** ML / Anomaly Detection, Risk Scoring & Security / Testing  
-> *(Member 1 is responsible for Product, Frontend, Backend, Integration, and Presentation)*
+# Cygnus AI - Celestial Intelligence for Financial Security & AML Compliance
 
 ---
 
