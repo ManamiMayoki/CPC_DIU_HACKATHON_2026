@@ -94,7 +94,7 @@ export default function Navbar({
                 letterSpacing: '-0.02em',
                 color: '#FFFFFF'
               }}>
-                FLOWGUARD
+                CYGNUS
               </span>
               <span style={{
                 background: 'linear-gradient(90deg, #B8FF3D, #38BDF8)',
