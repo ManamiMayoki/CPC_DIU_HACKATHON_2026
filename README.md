@@ -1,393 +1,281 @@
-# Cygnus AI — Celestial Intelligence for Financial Forensics & AML Compliance
+# Cygnus AI: Transaction Network Intelligence for AML
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python Version" />
-  <img src="https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black" alt="React 19" />
-  <img src="https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white" alt="Node Version" />
-  <img src="https://img.shields.io/badge/Express-5.2-black?logo=express&logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white" alt="Node 20+" />
+  <img src="https://img.shields.io/badge/Express-5-black?logo=express&logoColor=white" alt="Express 5" />
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/Tests-50%2F50%20Passed-brightgreen?logo=pytest&logoColor=white" alt="Tests 50/50 Passed" />
-  <img src="https://img.shields.io/badge/Vercel-Deployment%20Ready-black?logo=vercel&logoColor=white" alt="Vercel Ready" />
+  <img src="https://img.shields.io/badge/Tests-71%20Python%20%2B%2010%20API-brightgreen" alt="81 tests" />
 </p>
 
----
+AI Dev Fest 2026 (upay track). **Live demo: http://20.219.7.216:3001**
 
-## Table of Contents
-- [Executive Overview](#executive-overview)
-- [System Architecture](#system-architecture)
-- [Core Detection Capabilities](#core-detection-capabilities)
-  - [1. Graph Topological Pattern Detectors](#1-graph-topological-pattern-detectors)
-  - [2. Machine Learning Anomaly Engine](#2-machine-learning-anomaly-engine)
-  - [3. Explainable Composite Risk Scoring](#3-explainable-composite-risk-scoring)
-  - [4. AI Investigator & Narrative Synthesis](#4-ai-investigator--narrative-synthesis)
-- [Interactive Full-Stack Dashboard](#interactive-full-stack-dashboard)
-- [Quick Start Guide](#quick-start-guide)
-  - [Option A: Full-Stack with Docker Compose (Recommended)](#option-a-full-stack-with-docker-compose-recommended)
-  - [Option B: Local Modular Setup](#option-b-local-modular-setup)
-- [Cloud & Vercel Deployment](#cloud--vercel-deployment)
-- [REST API & Integration Contract](#rest-api--integration-contract)
-- [Comprehensive Test Suite & Benchmarks](#comprehensive-test-suite--benchmarks)
-- [Project Directory Structure](#project-directory-structure)
-- [Ethical Disclaimer](#ethical-disclaimer)
+## Contents
+
+1. [Project overview](#1-project-overview)
+2. [Features and how AI is used](#2-features-and-how-ai-is-used)
+3. [Tech stack](#3-tech-stack)
+4. [Requirements](#4-requirements)
+5. [Installation and setup](#5-installation-and-setup)
+6. [Environment variables](#6-environment-variables)
+7. [Run and build commands](#7-run-and-build-commands)
+8. [Live deployment](#8-live-deployment)
+9. [Testing](#9-testing)
+10. [Other configuration](#10-other-configuration)
+
+Also: [Results](#results) · [Architecture](#architecture) · [API](#rest-api) · [Project structure](#project-structure) · [Limitations](#limitations) · [Disclaimer](#disclaimer)
 
 ---
 
-## Executive Overview
+## 1. Project overview
 
-**Cygnus AI** is a financial intelligence and forensic analysis platform engineered to detect intricate financial crime topologies and money laundering (AML) operations across complex transactional networks.
+**Problem.** Money launderers on mobile financial services (MFS) split money across many wallets, keep each payment small and wait between hops. Each wallet looks normal on its own, so rules that judge one account or one transaction at a time miss the network: mule rings, layering loops, structuring under limits, hundi (informal remittance) payouts and stolen-device account takeovers.
 
-Unlike traditional rule-based transaction monitoring systems that evaluate transfers in isolation, Cygnus AI combines **directed graph topological analysis (NetworkX)** with **unsupervised anomaly detection (Isolation Forests)**. This hybrid architecture flags structural evasion strategies—such as layering loops, smurfing (structuring), and mule rings—and synthesizes deterministic, human-auditable case briefings for financial compliance officers and investigators.
+**Solution.** Cygnus AI turns transactions into a graph (accounts are nodes, payments are edges), follows the money in time order, and scores every account from 0 to 100 using graph pattern detectors, a trained classifier and an anomaly model. Every score comes with plain-language evidence and suggested next steps.
 
-```
-+-----------------------------------------------------------------------------------+
-|                              CYGNUS AI PIPELINE                                   |
-|                                                                                   |
-|  Synthetic / Raw Transactions                                                     |
-|         │                                                                         |
-|         ▼                                                                         |
-|  [Security & Ingress Validation] (Zero-tolerance negative/NaN/Inf/cycles)         |
-|         │                                                                         |
-|         ├─────────────────────────────────────────┐                               |
-|         ▼                                         ▼                               |
-|  [NetworkX Directed MultiGraph]        [Behavioral Feature Extractor]             |
-|         │                                         │                               |
-|         ▼                                         │                               |
-|  [7 Topology Pattern Detectors]                   │                               |
-|  (Fan-In, Fan-Out, Cycles, Chains,                │                               |
-|   Rapid Flow, Structuring, Clusters)              │                               |
-|         │                                         │                               |
-|         ▼                                         │                               |
-|  [Graph Topological Features]                     │                               |
-|         │                                         │                               |
-|         └───────────────────┬─────────────────────┘                               |
-|                             ▼                                                     |
-|                 [Unified ML Feature Vector]                                       |
-|                             │                                                     |
-|                             ▼                                                     |
-|                 [Isolation Forest Model]                                          |
-|                             │                                                     |
-|                             ▼                                                     |
-|             [Explainable Multi-Signal Risk Scorer]                                |
-|                 (40% ML + 40% Graph + 20% Behavioral)                             |
-|                             │                                                     |
-|                             ▼                                                     |
-|               [Grounded Evidence Generation]                                      |
-|                             │                                                     |
-|                             ▼                                                     |
-|         [AI Investigator Case Briefings & Interactive UI]                         |
-+-----------------------------------------------------------------------------------+
-```
+**Purpose.** Give AML analysts at an MFS provider such as upay a ranked, explained list of suspicious networks and a workflow to act on it: investigate, open a case, escalate, decide, export a report. The model ranks and explains. A person decides.
 
----
+All data is synthetic. No real customer data is used.
 
-## System Architecture
+## 2. Features and how AI is used
 
-The solution is partitioned into modular, independently scalable services:
+**Detection**
 
-```mermaid
-flowchart TD
-    subgraph Client ["Frontend Presentation Tier"]
-        UI["React 19 + Vite Dashboard\n(Interactive Network Graph, Metric Cards)"]
-    end
+| Feature | What it does | AI / algorithm |
+|---|---|---|
+| 11 pattern detectors | Fan-in, fan-out, rapid movement, transaction chain, circular flow, structuring, coordinated network, hundi operator, hundi funder, risk-area account takeover, takeover collector | Graph algorithms on NetworkX; time-ordered flow tracing (`ml/temporal_flow.py`) |
+| Trained classifier | Rates how closely an account resembles known laundering typologies | Gradient boosting (scikit-learn `HistGradientBoostingClassifier`) on 83 features: transactional, temporal, graph, 2-hop neighbourhood, account type |
+| Anomaly model | Flags unusual accounts without labels | `IsolationForest` |
+| Composite risk score | `0.40 x ML + 0.40 x Graph + 0.20 x Behaviour`, never lower than 75% of the graph evidence | Explainable weighted score, tier-aware for agents and merchants |
+| Per-account explanation | Evidence sentences plus the model's top drivers for that account | Occlusion-based feature attribution |
+| AI Investigator | Case briefing: typology, findings, next steps | Rule-based by default; Claude writes the narrative when `ANTHROPIC_API_KEY` is set, using only the computed facts |
 
-    subgraph Gateway ["API & Integration Gateway"]
-        API["Express 5 REST Server\n(Port 5001 / 5000)"]
-        Adapter["Engine Adapter\n(backend/engine_adapter.py)"]
-    end
+Risk tiers: LOW 0-39, MEDIUM 40-69, HIGH 70-89, CRITICAL 90-100.
 
-    subgraph Analytics ["Core Analytic Engines"]
-        GraphEngine["Graph Analysis Engine\n(NetworkX - Port 8000)"]
-        MLEngine["ML Anomaly & Risk Engine\n(Isolation Forest - Port 8001)"]
-    end
+**Analyst workflow and controls**
 
-    subgraph LLM ["Intelligence Layer (Optional)"]
-        Claude["Anthropic Claude API\n(Narrative Investigator)"]
-    end
+- Sign-in with two roles: AML Analyst and Compliance Officer.
+- Case management: open a case from an account, add notes, escalate, decide (only a compliance officer can file or close, with a written reason), export an STR/SAR-style report.
+- Append-only audit log in which each entry stores the SHA-256 hash of the previous one, with a "Verify chain" check.
+- KYC data masked by default; reveal needs the compliance role and a reason, and is audited.
+- Follow the Money: interactive network graph with 1-hop and 2-hop exploration and 11 demo scenarios.
+- Model Evaluation tab: model comparison, recall by typology, feature importance, bias check, throughput.
 
-    UI -->|HTTP / REST| API
-    API --> Adapter
-    Adapter --> GraphEngine
-    Adapter --> MLEngine
-    API -.->|Optional API Key| Claude
-```
+## 3. Tech stack
 
----
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, Vite 8, Recharts, lucide-react, served by nginx |
+| Backend API | Node.js 20, Express 5 (auth, roles, cases, audit log, report export) |
+| Graph engine | Python, NetworkX, FastAPI, Uvicorn |
+| ML engine | Python, scikit-learn (gradient boosting, random forest, IsolationForest), pandas, NumPy, SciPy, FastAPI |
+| AI models | `HistGradientBoostingClassifier` (trained in this repo), `IsolationForest`; optional Anthropic Claude API for the narrative |
+| Data | Synthetic generators in `data/synthetic/` (demo scenarios and labelled MFS networks) |
+| Infrastructure | Docker, Docker Compose, GitHub Actions CI, Azure VM, optional Vercel for the dashboard |
 
-## Core Detection Capabilities
+## 4. Requirements
 
-### 1. Graph Topological Pattern Detectors
+- **With Docker (recommended):** Docker 20+ and Docker Compose. About 4 GB of free RAM and 3 GB of disk for the images.
+- **Without Docker:** Python 3.10+, Node.js 20+, npm.
+- Python packages: `scikit-learn`, `scipy`, `pandas`, `numpy`, `networkx`, `fastapi`, `uvicorn`, `pytest` (see `ml/requirements.txt` and `graph-engine/requirements.txt`).
+- Node packages are installed by `npm ci` in `backend/` and `frontend/`.
+- No GPU is needed. No API key is needed; the Claude narrative is optional.
+- Ports 3001, 5001, 8000 and 8001 must be free.
 
-Cygnus AI enforces rigorous heuristic and temporal checks on the financial graph:
+## 5. Installation and setup
 
-| Pattern Typology | Algorithmic Definition & Heuristic Thresholds | Target Typology |
-| :--- | :--- | :--- |
-| **Fan-In** | High in-degree ($\ge 4$) with in-to-out ratio $\ge 2.0$, with senders clustered inside a **2-hour burst window**. | Aggregator / Collection Mule |
-| **Fan-Out** | Single source dispersing funds to multiple counterparties ($\ge 4$) with out-to-in ratio $\ge 2.0$ inside a **2-hour burst window**. | Distribution Hub / Splitter |
-| **Circular Flow** | Directed loops ($A \to B \to C \to A$) spanning 3 to 6 hops, strictly evaluated **in chronological order** within a **6-hour window**, returning $50\% \text{--} 110\%$ of initial value. | Layering & Round-tripping |
-| **Transaction Chain** | Linear paths of consecutive funds passing across $\ge 3$ intermediate accounts. | Flow Obfuscation / Pass-through |
-| **Rapid Movement** | Intermediary receives $\ge \$1,000$ and dispatches $70\% \text{--} 110\%$ of incoming volume to a third party within **1 hour**. | Pass-Through Mule Account |
-| **Structuring (Smurfing)** | $\ge 3$ transactions calibrated just below regulatory reporting limits ($85\% \text{--} 100\%$ of $\$10,000$ threshold) inside a **24-hour window**. | Bank Secrecy Act / CTR Evasion |
-| **Coordinated Network** | Dense interconnected clusters and strongly connected subgraphs ($\ge 4$ accounts, edge density $\ge 0.40$). | Organized Financial Crime Ring |
-
----
-
-### 2. Machine Learning Anomaly Engine
-
-- **Model**: `IsolationForest` configured with deterministic initialization (`random_state=42`) for 100% reproducible scoring across runs.
-- **Input Feature Space**: Merged multidimensional matrix capturing:
-  - *Graph Topology*: In-degree, out-degree, weighted volumes, cycle participation, chain lengths, counterparty diversity.
-  - *Behavioral Velocity*: Inflow/outflow volumes, transaction frequency, velocity, ratio differentials.
-- **Normalization**: Min-max calibrated anomaly score mapping anomaly decisions directly into a uniform risk spectrum.
-
----
-
-### 3. Explainable Composite Risk Scoring
-
-To prevent "black-box" decision-making, Cygnus AI computes a transparent, auditable composite risk score ($0 \text{--} 100$):
-
-$$\text{Composite Risk} = 0.40 \times \text{Score}_{\text{ML}} + 0.40 \times \text{Score}_{\text{Graph}} + 0.20 \times \text{Score}_{\text{Behavioral}}$$
-
-#### Risk Tiers & Actions:
-- **LOW ($0 \text{--} 39$)**: Standard operational behavior; routine automated monitoring.
-- **MEDIUM ($40 \text{--} 59$)**: Minor deviations or low-frequency anomalous activity.
-- **HIGH ($60 \text{--} 79$)**: Multiple corroborating structural or behavioral indicators.
-- **CRITICAL ($80 \text{--} 100$)**: High-confidence coordinated evasion (e.g., mule ring, smurfing, circular flow); immediate SAR filing review recommended.
-
----
-
-### 4. AI Investigator & Narrative Synthesis
-
-- **Deterministic Rule Briefing**: Automatically produces key findings, detected typologies, evidence tables, linked accounts, and recommended regulatory actions without requiring external LLM dependencies.
-- **Enhanced LLM Analyst Briefings (Optional)**: When configured with `ANTHROPIC_API_KEY`, the Express backend invokes Claude to synthesize natural-language investigative dossiers strictly grounded in the pipeline's factual output.
-
----
-
-## Interactive Full-Stack Dashboard
-
-The visual investigation platform provides financial compliance teams with immediate situational awareness:
-
-- **Network Graph Visualizer**: Real-time canvas representing nodes, directed edges, risk-weighted node colors, and multi-hop counterparty exploration.
-- **Account Intelligence Panel**: In-depth transaction breakdown, incoming vs. outgoing ratio charts, and algorithmic indicators.
-- **Risk Score Explainer**: Transparent breakdown of ML, Graph, and Behavioral contributions.
-- **Live Pipeline Simulator**: Submit custom synthetic batches or single JSON payloads to evaluate predictions dynamically.
-- **Resilient Offline Fallback**: If backend services are unreachable, the UI seamlessly falls back to precomputed states in `public/data/initial_state.json`.
-
----
-
-## Quick Start Guide
-
-### Prerequisites
-- **Python**: 3.10 or higher
-- **Node.js**: v20 or higher
-- **Docker & Docker Compose**: Recommended for instant setup
-
----
-
-### Option A: Full-Stack with Docker Compose (Recommended)
-
-Start the frontend, backend API, Graph Engine, and ML Engine with a single command:
+### Option A: Docker (recommended)
 
 ```bash
-# Clone the repository
+git clone https://github.com/ManamiMayoki/CPC_DIU_HACKATHON_2026.git
+cd CPC_DIU_HACKATHON_2026
+cp .env.example .env          # optional; the defaults work for the demo
+docker compose up -d --build  # or: docker-compose up -d --build
+```
+
+The first build takes a few minutes and trains the classifier (about 30 seconds). Then open http://localhost:3001 and click **AML Analyst** or **Compliance Officer**.
+
+### Option B: Local, without Docker
+
+```bash
 git clone https://github.com/ManamiMayoki/CPC_DIU_HACKATHON_2026.git
 cd CPC_DIU_HACKATHON_2026
 
-# Launch all microservices
-docker compose up --build
-```
+# 1. Python
+pip install -r ml/requirements.txt -r graph-engine/requirements.txt pytest
+python -m ml.supervised        # trains and caches the classifier (about 30 s)
 
-#### Running Services:
-| Component | Service | Local Address |
-| :--- | :--- | :--- |
-| **Web Dashboard** | Frontend | [http://localhost:3001](http://localhost:3001) |
-| **Integration API** | Backend Gateway | [http://localhost:5001](http://localhost:5001) |
-| **Graph Analysis Engine** | Fast Microservice | [http://localhost:8000/docs](http://localhost:8000/docs) |
-| **ML Inference Engine** | Fast Microservice | [http://localhost:8001/docs](http://localhost:8001/docs) |
-
----
-
-### Option B: Local Modular Setup
-
-#### 1. Setup Python Environment
-```bash
-pip install networkx pandas numpy scikit-learn pytest
-```
-
-#### 2. Generate Synthetic Datasets
-```bash
-python data/synthetic/generator.py
-```
-*Creates `data/synthetic/transactions_sample.json` simulating 190 transactions across 73 accounts.*
-
-#### 3. Run Forensic Analytics
-```bash
-# Execute standalone Graph Topology Engine
-python graph-engine/engine.py
-
-# Execute full ML Inference and Risk Scoring Pipeline
-python ml/inference.py
-
-# Run Scenario Benchmark Evaluation
-python evaluate_benchmark.py
-```
-
-#### 4. Run Backend & Frontend Locally
-```bash
-# Terminal 1: Backend
+# 2. Backend (terminal 1)
 cd backend
-npm install
-npm run dev
+npm ci
+PORT=5000 npm start
 
-# Terminal 2: Frontend
+# 3. Frontend (terminal 2)
 cd frontend
-npm install
-npm run dev
+npm ci
+npm run dev                    # http://localhost:5173, proxies /api to localhost:5000
 ```
 
-The frontend will be available at `http://localhost:5173`.
+## 6. Environment variables
+
+All are optional for the demo. Copy `.env.example` to `.env` and fill in what you need. Never commit `.env`.
+
+| Variable | Used by | Purpose | Example placeholder |
+|---|---|---|---|
+| `CYGNUS_DEMO_MODE` | backend | `true` shows the one-click demo sign-in buttons. Set `false` outside demos. | `true` |
+| `CYGNUS_AUTH_SECRET` | backend | Secret that signs session tokens. Empty means a random one at each start. | `<long-random-string>` |
+| `CYGNUS_ANALYST_PASSWORD` | backend | Password for the `analyst` account. Empty disables password sign-in for it. | `<choose-a-password>` |
+| `CYGNUS_ADMIN_PASSWORD` | backend | Password for the `admin` (compliance officer) account. | `<choose-a-password>` |
+| `ANTHROPIC_API_KEY` | backend | Optional. Lets Claude write the AI Investigator narrative. | `<your-anthropic-api-key>` |
+| `PORT` | backend | Port the API listens on (default 5000 inside the container). | `5000` |
+| `CYGNUS_DATA_DIR` | backend | Folder for the audit log and case files. | `/app/backend/data` |
+| `VITE_API_URL` | frontend build | Backend API base URL when the dashboard is hosted elsewhere (for example Vercel). Empty means `/api` on the same origin. | `https://<your-backend-host>/api` |
+
+## 7. Run and build commands
+
+| Task | Command |
+|---|---|
+| Start everything | `docker compose up -d --build` |
+| Stop everything | `docker compose down` |
+| Rebuild after a pull | `git pull origin main && docker compose down && docker compose up -d --build` |
+| Backend only | `cd backend && npm ci && PORT=5000 npm start` |
+| Frontend dev server | `cd frontend && npm ci && npm run dev` |
+| Frontend production build | `cd frontend && npm run build` (output in `frontend/dist`) |
+| Train the classifier | `python -m ml.supervised` |
+| Regenerate demo transactions | `python data/synthetic/generator.py` |
+| Regenerate the dashboard's saved state | `python backend/engine_adapter.py --action analyze --out frontend/public/data/initial_state.json` |
+| Run the pipeline from Python | `python ml/inference.py` |
+| Model evaluation (about 7 minutes) | `python -m ml.evaluation` |
+| Throughput and latency benchmark | `python -m ml.benchmark --api http://localhost:5001` |
+
+Local addresses after `docker compose up`:
+
+| Service | Address |
+|---|---|
+| Dashboard | http://localhost:3001 |
+| Backend API | http://localhost:5001/api/health |
+| Graph engine docs | http://localhost:8000/docs |
+| ML engine docs | http://localhost:8001/docs |
+
+## 8. Live deployment
+
+- **Dashboard and API:** http://20.219.7.216:3001 (API under `/api`, for example http://20.219.7.216:3001/api/health)
+- The graph and ML engine docs run on ports 8000 and 8001 of the same host; whether they are reachable depends on the server's firewall.
+
+Sign in with the **AML Analyst** or **Compliance Officer** demo button. No password is needed in demo mode.
+
+The dashboard can also be hosted on Vercel: import the repo, set the root directory to `frontend`, and set `VITE_API_URL` to the backend's `/api` address. Without a backend it runs as a read-only preview on the saved dataset.
+
+## 9. Testing
+
+```bash
+# Python: 71 tests (graph, ML, security validation, scenarios, regressions, Phase 2)
+pip install -r ml/requirements.txt -r graph-engine/requirements.txt pytest
+python -m pytest -q
+
+# Backend API: 10 tests (auth, roles, PII masking, audit chain, case workflow)
+cd backend && npm ci && npm test
+
+# Scenario benchmark: 9 controlled scenarios must pass
+python evaluate_benchmark.py
+
+# Frontend build and lint
+cd frontend && npm ci && npm run build && npm run lint
+```
+
+CI (`.github/workflows/ci.yml`) runs the backend tests, the frontend build and the Python tests on every push and pull request to `main`.
+
+To test by hand: open the dashboard, sign in as AML Analyst, pick the **Mule-Ring** scenario in Follow the Money, open a case, add a note and escalate it. Sign out, sign in as Compliance Officer, file the case with a reason, export the STR draft, and open Audit Log to verify the chain.
+
+## 10. Other configuration
+
+- **Risk areas** for the account-takeover detector are a config file, `data/config/risk_areas.json`. The demo uses placeholder zone names; a real deployment would use the list maintained by the provider's fraud team.
+- **Optional transaction fields.** The pipeline needs `transaction_id`, `sender_id`, `receiver_id`, `amount`, `timestamp`. The hundi and takeover detectors also use `tx_type`, `location` and `device_id` when present.
+- **Persistent data.** Docker Compose mounts the volume `cygnus-data` at `/app/backend/data` so the audit log and cases survive rebuilds.
+- **Trained model cache.** `ml/artifacts/gbm_graph.joblib` is created at image build (or by `python -m ml.supervised`) and is not committed.
+- **Uploading your own data.** Only the Compliance Officer role can call `POST /api/pipeline/run`.
+- **No external accounts or access** are needed to run or test the project.
 
 ---
 
-## Cloud & Vercel Deployment
+## Results
 
-The frontend includes full out-of-the-box support for [Vercel](https://vercel.com):
+Measured by `python -m ml.evaluation` on held-out synthetic networks; full detail in [`docs/PHASE2_METRICS.md`](docs/PHASE2_METRICS.md).
 
-1. **Import Project** into Vercel and set **Root Directory** to `frontend`.
-2. **Framework Preset** automatically detects as `Vite`.
-3. **Environment Variables**:
-   - Set `VITE_API_URL` to your live backend endpoint (e.g., `https://api.yourdomain.com/api`).
-   - If deploying as a standalone prototype, leave `VITE_API_URL` blank; the dashboard will automatically run in zero-config offline mode using the pre-computed synthetic dataset.
+| | Rules only | Cygnus graph model |
+|---|---:|---:|
+| Precision | 26.5% | 94.8% |
+| Recall | 32.1% | 83.8% |
+| F1 | 0.290 | 0.890 |
+| PR-AUC | 0.201 | 0.943 |
+| False-positive rate | 2.35% | 0.12% |
 
----
+- Test set: 423,042 transactions, 39,490 accounts, 1,010 labelled suspicious (848,752 transactions generated in total).
+- Rules miss 686 of the 1,010 suspicious accounts; the graph model catches 561 of those.
+- 73.6% fewer alerts at equal recall.
+- Bias check: legitimate agents wrongly flagged fell from 98.7% (Phase 1 approach) to 0.57%.
+- Throughput: 1,061,510 transactions scored in 18.9 seconds on an 8-core laptop.
 
-## REST API & Integration Contract
+## Architecture
 
-The integration server exposes standardized REST endpoints:
+```mermaid
+flowchart TD
+    UI["React dashboard (port 3001)"] -->|REST + session token| API["Express API (port 5001)\nauth, roles, cases, audit, reports"]
+    API --> Adapter["engine_adapter.py"]
+    Adapter --> Graph["Graph engine\nNetworkX + flow tracing (port 8000)"]
+    Adapter --> ML["ML engine\ngradient boosting + IsolationForest (port 8001)"]
+    API -.->|optional| Claude["Claude API (narrative)"]
+```
+
+More in [`docs/architecture.md`](docs/architecture.md).
+
+## REST API
+
+Every endpoint except `/api/health` and `/api/auth/*` needs `Authorization: Bearer <token>`.
 
 | Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health status and account count. |
-| `GET` | `/api/pipeline` | Complete network graph, risk distributions, and account metrics. |
-| `GET` | `/api/network/:accountId?hops=1` | Dynamic neighborhood subgraph for a given entity. |
-| `GET` | `/api/accounts/:accountId` | Detailed behavioral profile and evidence record. |
-| `GET` | `/api/investigate/:accountId` | Rule-based or LLM-synthesized narrative briefing. |
-| `POST` | `/api/pipeline/run` | Execute end-to-end pipeline on arbitrary transaction batches. |
-
-Python developers can also consume the pipeline directly:
-```python
-from ml.inference import run_pipeline
-
-# transactions = list of dicts with sender_id, receiver_id, amount, timestamp
-results = run_pipeline(transactions)
-```
-
-Refer to [`docs/api-contract.md`](docs/api-contract.md) and [`docs/architecture.md`](docs/architecture.md) for complete schema specifications.
-
----
-
-## Comprehensive Test Suite & Benchmarks
-
-The codebase includes **50 automated tests** covering security boundaries, regressions, topological algorithms, and ML determinism:
-
-```bash
-python -m pytest tests/ -v
-```
-
-| Test Suite | Scope & Verifications | Test Count | Status |
-| :--- | :--- | :---: | :---: |
-| [`tests/test_graph.py`](tests/test_graph.py) | Graph integrity, node/edge attributes, Fan-In/Out, cycles, chains, rapid movement, clusters | **13** | Passed |
-| [`tests/test_ml.py`](tests/test_ml.py) | Behavioral features, Isolation Forest training, normalization, evidence generation | **8** | Passed |
-| [`tests/test_scenarios_benchmark.py`](tests/test_scenarios_benchmark.py) | Controlled scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID, CHAIN, CYCLES, STRUCTURING, MULE_RING) | **11** | Passed |
-| [`tests/test_security.py`](tests/test_security.py) | Ingress validation, self-transfers, negative amounts, NaN/Inf, timestamp parsing, duplicate IDs | **12** | Passed |
-| [`tests/test_regressions.py`](tests/test_regressions.py) | Timezone invariance, cross-seed stability, deterministic sorting | **2** | Passed |
-| [`tests/test_upgrade.py`](tests/test_upgrade.py) | Smurfing detector validation, out-of-order loop rejection, offline briefing structure | **4** | Passed |
-| **Total Test Coverage** | **Complete Engine & Security Validation** | **50 / 50** | **100% Passed** |
-
----
-
-## Project Directory Structure
-
-```
-.
-├── backend/                  # Node.js / Express API gateway & Python adapter
-│   ├── src/
-│   │   ├── server.js         # REST endpoints & caching layer
-│   │   └── investigator.js   # Claude AI case narrative generator
-│   └── engine_adapter.py     # High-performance CLI bridge to Python core
-├── frontend/                 # React 19 + Vite + Tailwind CSS dashboard
-│   ├── src/
-│   │   ├── components/       # Graph visualizer, RiskScoreCard, AIInvestigator
-│   │   └── services/api.js   # API client with automatic offline fallback
-│   ├── vercel.json           # Vercel deployment & SPA routing rewrites
-│   └── .env.example          # Environment variable template
-├── graph-engine/             # NetworkX graph topology & pattern detectors
-│   ├── graph.py              # Directed graph construction
-│   ├── patterns.py           # 7 suspicious network pattern detectors
-│   ├── features.py           # Topological feature engineering
-│   └── engine.py             # Standalone graph analysis orchestrator
-├── ml/                       # Machine learning & forensic risk scoring
-│   ├── validation.py         # Ingress data sanitizer & security constraints
-│   ├── features.py           # Transactional & behavioral feature extraction
-│   ├── model.py              # Isolation Forest & composite risk scoring
-│   ├── inference.py          # Unified pipeline runner & evidence generator
-│   └── investigator.py       # Deterministic rule-based case briefing
-├── data/                     # Synthetic transaction generators & samples
-├── docs/                     # API contracts & technical architecture specs
-├── tests/                    # Pytest suite (50 tests covering all layers)
-├── docker-compose.yml        # Multi-container orchestration
-└── evaluate_benchmark.py     # Scenario detection benchmark script
-```
-
----
-
-## Ethical Disclaimer
-
-This repository is developed for algorithmic research, benchmarking, and demonstration purposes on synthetic transaction datasets. The topological patterns, risk scores, and classifications generated by this system do **not** constitute legal evidence of financial crime and are designed to assist human compliance analysts in forensic triage, not replace formal regulatory oversight.
-## 6. Disclaimer
-This software is a synthetic-data hackathon prototype for algorithm research and demonstration. The topological patterns, risk scores, and risk tiers do **NOT** prove financial crime, do **NOT** constitute legal or regulatory evidence, and do **NOT** represent official banking compliance standards.
-
-## Phase 2 additions
-
-Everything below was added after the Phase 1 judge feedback. The measured numbers live in
-[`docs/PHASE2_METRICS.md`](docs/PHASE2_METRICS.md), which is generated by the scripts and never typed by hand.
-
-| Area | What was added | Where |
 |---|---|---|
-| Analyst workflow | Sign-in, case management (open, notes, escalate, decide), exportable STR/SAR-style report | `backend/src/cases.js`, `backend/src/report.js`, Cases tab |
-| Access control | Two roles (AML analyst, compliance officer) with a permission matrix; only a compliance officer can file or close a case | `backend/src/auth.js` |
-| Audit | Append-only audit log where each entry stores the SHA-256 hash of the previous one; tampering is detected | `backend/src/audit.js`, Audit Log tab |
-| Privacy | KYC profile masked in every response; reveal needs the compliance role and a written reason, and is audited | `backend/src/privacy.js` |
-| Data | Labelled synthetic Bangladesh-style MFS network generator (about 137,000 transactions per network, six typologies plus legitimate look-alikes) | `data/synthetic/mfs_generator.py` |
-| Temporal graph | Time-ordered flow tracing: follows money hop by hop, finds flow chains and loops in one pass | `ml/temporal_flow.py` |
-| Features | 83 features per account: transactional, temporal, graph, 2-hop neighbourhood, account type | `ml/feature_store.py` |
-| Models | Trained gradient-boosting classifier with per-account drivers, compared against rules, graph detectors, IsolationForest and a random forest | `ml/supervised.py`, `ml/evaluation.py` |
-| Account takeover | Risk-area detector scored against each customer's own baseline (usual areas, handset, spending); residents of a risk area are not flagged | `ml/context_risk.py`, `data/config/risk_areas.json` |
-| Hundi | Detector for recurring informal remittance payout through an agent or wallet; licensed remittance payout is excluded | `ml/context_risk.py` |
-| Fairness | Bias check across account tiers and districts; the score is now tier-aware | `ml/evaluation.py`, `ml/model.py` |
-| Scale | Throughput and latency benchmark up to about one million transactions | `ml/benchmark.py` |
+| GET | `/api/health` | Service status |
+| POST | `/api/auth/demo` | Demo sign-in, body `{"role": "analyst"}` or `{"role": "admin"}` |
+| POST | `/api/auth/login` | Password sign-in |
+| GET | `/api/pipeline` | Full graph, accounts, risk distribution |
+| GET | `/api/network/:accountId?hops=1` | Neighbourhood subgraph |
+| GET | `/api/accounts/:accountId` | Account profile and evidence |
+| GET | `/api/accounts/:accountId/profile` | Masked KYC profile |
+| POST | `/api/accounts/:accountId/profile/reveal` | Unmasked profile (compliance officer, reason required, audited) |
+| GET | `/api/investigate/:accountId` | AI Investigator briefing |
+| GET, POST | `/api/cases` | List cases, open a case |
+| PATCH | `/api/cases/:id` | Change status or assignee |
+| POST | `/api/cases/:id/notes` | Add a note |
+| GET | `/api/cases/:id/report` | STR/SAR-style report (HTML, or `?format=json`) |
+| GET | `/api/audit` | Audit log and chain check (compliance officer) |
+| POST | `/api/pipeline/run` | Run the pipeline on uploaded transactions (compliance officer) |
 
-### Running it
+Schemas are in [`docs/api-contract.md`](docs/api-contract.md).
 
-```bash
-docker-compose down && docker-compose up -d --build   # dashboard on http://localhost:3001
+## Project structure
+
+```
+backend/          Express API: server.js, auth.js, cases.js, audit.js, privacy.js, report.js, tests
+frontend/         React dashboard: components, services/api.js, saved demo state
+graph-engine/     NetworkX graph, pattern detectors, FastAPI service
+ml/               validation, features, feature store, flow tracing, context detectors,
+                  models, inference, evaluation, benchmark, FastAPI service
+data/synthetic/   demo scenario generator, labelled MFS network generator, synthetic KYC profiles
+data/config/      risk_areas.json
+docs/             architecture, API contract, PHASE2_METRICS.md, evaluation results
+tests/            71 Python tests
 ```
 
-Open the dashboard and sign in with one of the two demo buttons (AML Analyst or Compliance Officer).
-For password sign-in or to turn demo sign-in off, copy `.env.example` to `.env`.
+## Limitations
 
-### Tests and evaluation
+- All data is synthetic, and the simulator was written by the same team as the detectors, so the reported accuracy is an upper bound.
+- No upay integration, no real transaction data and no analyst pilot yet.
+- The neighbourhood features are fixed 2-hop averages, not a trained graph neural network.
+- Neo4j, Kafka streaming, encryption at rest and drift monitoring are planned, not built.
+- The workload figures assume 20 minutes of review per alert.
 
-```bash
-python -m pytest -q            # 71 Python tests
-cd backend && npm test         # 10 API tests: auth, roles, masking, audit chain, case workflow
-python -m ml.evaluation        # model comparison, bias check (about 6 minutes)
-python -m ml.benchmark --api http://localhost:5001   # throughput and API latency
-```
+## Disclaimer
 
-### Limitations & Future Scope
-
-- **Synthetic Data:** Evaluation uses simulated transactions, not real-world financial data.
-- **Validation:** The simulator and detection models were developed by the same team, so reported performance may overestimate real-world accuracy.
-- **No Live Integration:** Upay integration, real transaction testing, and analyst pilot validation are pending.
-- **Future Development:** Neo4j, Kafka-based streaming, and a trained Graph Neural Network (GNN) are planned enhancements, not yet implemented.
+This is a hackathon prototype on synthetic data. Its patterns, scores and tiers are indicators to help a human reviewer prioritise. They are not evidence of financial crime and not an official compliance standard. The STR export is a draft and is not submitted anywhere.
