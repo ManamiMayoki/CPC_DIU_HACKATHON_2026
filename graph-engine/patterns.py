@@ -506,13 +506,111 @@ def detect_coordinated_networks(
     )
 
 
-def run_all_network_detections(graph: nx.DiGraph) -> Dict[str, PatternDetectionResult]:
-    """Executes all pattern detection algorithms against the provided transaction graph."""
+# Above this many accounts, enumerating cycles and paths on the static graph stops being
+# feasible (the search caps cut it off before it reaches the suspicious part of the network),
+# so circular flows and chains are found by replaying transactions in time order instead.
+TEMPORAL_MODE_NODE_LIMIT = 2000
+
+
+def detect_temporal_flows(
+    graph: nx.DiGraph,
+    min_fast_hops: int = 3,
+    min_slow_hops: int = 4,
+    max_details: int = 200,
+) -> Tuple[PatternDetectionResult, PatternDetectionResult]:
+    """Circular flows and transaction chains from time-ordered flow tracing (ml.temporal_flow).
+
+    A chain is flagged when money moves through `min_fast_hops` linked payments with at most
+    an hour between hops, or `min_slow_hops` with at most 12 hours between hops. A circular
+    flow is flagged when such a chain returns to an account already on it. One linear pass over
+    the transactions, so it scales where exhaustive search does not.
+    """
+    from ml.temporal_flow import FAST_WINDOW_SECONDS, SLOW_WINDOW_SECONDS, trace_flows
+
+    nodes = sorted(graph.nodes(), key=str)
+    index = {node: i for i, node in enumerate(nodes)}
+    rows = []
+    for u, v, data in graph.edges(data=True):
+        for t in data.get("transactions", []):
+            dt = parse_iso_timestamp(t.get("timestamp"))
+            if dt is not None:
+                rows.append((dt.timestamp(), index[u], index[v], float(t.get("amount", 0.0))))
+    rows.sort()
+    times = [row[0] for row in rows]
+    senders = [row[1] for row in rows]
+    receivers = [row[2] for row in rows]
+    amounts = [row[3] for row in rows]
+
+    fast = trace_flows(senders, receivers, amounts, times, len(nodes), FAST_WINDOW_SECONDS, min_chain_hops=min_fast_hops, keep_details=max_details)
+    slow = trace_flows(senders, receivers, amounts, times, len(nodes), SLOW_WINDOW_SECONDS, min_chain_hops=min_slow_hops, keep_details=max_details)
+
+    cycle_flagged = sorted(nodes[i] for i in range(len(nodes)) if fast.cycle_count[i] > 0 or slow.cycle_count[i] > 0)
+    cycle_details = []
+    seen_loops = set()
+    for found in fast.cycles + slow.cycles:
+        loop = [nodes[i] for i in found["nodes"]]
+        key = frozenset(loop)
+        if key in seen_loops:
+            continue
+        seen_loops.add(key)
+        cycle_details.append({
+            "cycle_path": loop + [loop[0]],
+            "length": len(loop),
+            "nodes": loop,
+            "hops": [],
+            "loop_duration_seconds": round(found["duration_seconds"], 1),
+            "amount_retained_ratio": round(found["closing_amount"] / max(found["first_amount"], 1e-9), 3),
+        })
+
+    chain_flagged = sorted(
+        nodes[i] for i in range(len(nodes))
+        if fast.chain_length[i] >= min_fast_hops or slow.chain_length[i] >= min_slow_hops
+    )
+    chain_details = []
+    for found in fast.chains + slow.chains:
+        path = [nodes[i] for i in found["path"]]
+        chain_details.append({"chain_path": path, "hops": found["hops"], "start": path[0], "end": path[-1]})
+    # Per-account chain length for accounts whose own chain was not kept in the capped detail list
+    chain_lengths = {
+        nodes[i]: int(max(fast.chain_length[i], slow.chain_length[i])) for i in range(len(nodes))
+        if fast.chain_length[i] >= min_fast_hops or slow.chain_length[i] >= min_slow_hops
+    }
+
+    circular = PatternDetectionResult(
+        pattern_name="circular_flow",
+        detected=len(cycle_flagged) > 0,
+        flagged_accounts=cycle_flagged,
+        details=cycle_details,
+        description=f"Detected time-ordered circular flow(s) involving {len(cycle_flagged)} account(s) (temporal tracing).",
+    )
+    chains = PatternDetectionResult(
+        pattern_name="transaction_chain",
+        detected=len(chain_flagged) > 0,
+        flagged_accounts=chain_flagged,
+        details=chain_details,
+        description=f"Identified time-ordered flow chain(s) across {len(chain_flagged)} account(s) (temporal tracing).",
+    )
+    chains.chain_lengths = chain_lengths  # type: ignore[attr-defined]
+    return circular, chains
+
+
+def run_all_network_detections(graph: nx.DiGraph, temporal: Optional[bool] = None) -> Dict[str, PatternDetectionResult]:
+    """Executes all pattern detection algorithms against the provided transaction graph.
+
+    temporal=None picks the mode by graph size: exhaustive search on small graphs (the demo
+    scenarios), time-ordered flow tracing on large ones.
+    """
+    if temporal is None:
+        temporal = graph.number_of_nodes() > TEMPORAL_MODE_NODE_LIMIT
+    if temporal:
+        circular, chains = detect_temporal_flows(graph)
+    else:
+        circular, chains = detect_circular_flows(graph), detect_transaction_chains(graph)
     return {
         "fan_in": detect_fan_in(graph),
         "fan_out": detect_fan_out(graph),
-        "circular_flow": detect_circular_flows(graph),
-        "transaction_chain": detect_transaction_chains(graph),
+        "circular_flow": circular,
+        "transaction_chain": chains,
         "rapid_movement": detect_rapid_movement(graph),
         "structuring": detect_structuring(graph),
         "coordinated_network": detect_coordinated_networks(graph),

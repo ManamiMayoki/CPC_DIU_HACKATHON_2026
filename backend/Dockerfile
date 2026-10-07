@@ -13,6 +13,8 @@ COPY backend backend
 COPY ml ml
 COPY graph-engine graph-engine
 COPY data data
+# Train and cache the reference classifier (about 30 s) so no request has to wait for it
+RUN cd /app && python3 -m ml.supervised
 COPY frontend/public/data/initial_state.json frontend/public/data/initial_state.json
 WORKDIR /app/backend
 ENV PORT=5000

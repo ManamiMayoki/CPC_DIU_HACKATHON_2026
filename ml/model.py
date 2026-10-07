@@ -204,7 +204,17 @@ class ExplainableRiskScorer:
        (Normalized to max 100 before weighting).
 
     Final Risk Score = (0.40 * ML) + (0.40 * Graph) + (0.20 * Behavioral)
+
+    Graph-evidence floor: the final score is never lower than GRAPH_EVIDENCE_FLOOR x Graph.
+    The ML component is an unsupervised outlier score, so an account that looks like several
+    others (four mules doing the same thing) is not an outlier and scores low on ML even when
+    the graph evidence is overwhelming. The floor stops that dilution: strong, corroborated
+    network evidence alone is enough for HIGH, while CRITICAL still needs the other signals.
     """
+
+    GRAPH_EVIDENCE_FLOOR: float = 0.75
+    BUSINESS_TIERS = ("agent", "merchant")
+    BUSINESS_AS_USUAL_PATTERNS = ("fan_in", "fan_out", "rapid_movement")
 
     WEIGHT_ML: float = 0.40
     WEIGHT_GRAPH: float = 0.40
@@ -255,8 +265,17 @@ class ExplainableRiskScorer:
         is_ml_anomaly: bool,
         feature_row: Dict[str, Any],
         pattern_flags: Dict[str, bool],
+        account_tier: str = "personal",
     ) -> Tuple[float, str, Dict[str, float]]:
-        """Calculates final explainable risk score (0-100) and risk tier."""
+        """Calculates final explainable risk score (0-100) and risk tier.
+
+        account_tier is the KYC account type. For agents and merchants, collecting from many
+        customers, paying out to many and turning money around quickly is the business itself,
+        so fan-in, fan-out and rapid movement are not counted as suspicious for those tiers
+        (the Phase 2 bias check showed they otherwise flag almost every legitimate agent).
+        """
+        if account_tier in self.BUSINESS_TIERS:
+            pattern_flags = {k: v for k, v in pattern_flags.items() if k not in self.BUSINESS_AS_USUAL_PATTERNS}
         # 1. ML component (0-100)
         c_ml = float(ml_score)
 
@@ -322,7 +341,8 @@ class ExplainableRiskScorer:
         c_beh = min(100.0, beh_pts)
 
         # Weighted combination
-        final_score = (self.w_ml * c_ml) + (self.w_graph * c_graph) + (self.w_beh * c_beh)
+        weighted_score = (self.w_ml * c_ml) + (self.w_graph * c_graph) + (self.w_beh * c_beh)
+        final_score = max(weighted_score, self.GRAPH_EVIDENCE_FLOOR * c_graph)
         final_score = round(min(100.0, max(0.0, final_score)), 2)
 
         tier = RiskLevel.from_score(final_score)

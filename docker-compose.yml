@@ -11,6 +11,15 @@ services:
       # Optional: export ANTHROPIC_API_KEY before `docker-compose up` to let Claude write
       # AI Investigator narratives. Without it the rule-based briefing is used.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # Sign-in. Demo mode adds one-click analyst / compliance-officer sign-in for the judges;
+      # set CYGNUS_DEMO_MODE=false and the two passwords for a real deployment (see .env.example).
+      - CYGNUS_DEMO_MODE=${CYGNUS_DEMO_MODE:-true}
+      - CYGNUS_AUTH_SECRET=${CYGNUS_AUTH_SECRET:-}
+      - CYGNUS_ANALYST_PASSWORD=${CYGNUS_ANALYST_PASSWORD:-}
+      - CYGNUS_ADMIN_PASSWORD=${CYGNUS_ADMIN_PASSWORD:-}
+    volumes:
+      # Audit log and case files survive container rebuilds
+      - cygnus-data:/app/backend/data
     restart: always
 
   frontend:
@@ -39,3 +48,6 @@ services:
     ports:
       - "8001:8001"
     restart: always
+
+volumes:
+  cygnus-data:

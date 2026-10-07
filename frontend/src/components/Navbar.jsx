@@ -10,7 +10,12 @@ import {
   Zap,
   Info,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  FolderOpen,
+  BarChart3,
+  ScrollText,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 export default function Navbar({
@@ -18,7 +23,9 @@ export default function Navbar({
   setActiveTab,
   onSearchAccount,
   demoScenarios = [],
-  onSelectScenario
+  onSelectScenario,
+  user = null,
+  onSignOut
 }) {
   const [searchInput, setSearchInput] = useState('');
   const [showDemoMenu, setShowDemoMenu] = useState(false);
@@ -37,8 +44,11 @@ export default function Navbar({
     { id: 'high-risk', label: 'High-Risk Accounts', icon: AlertTriangle },
     { id: 'patterns', label: 'Detection Patterns', icon: Zap },
     { id: 'investigator', label: 'AI Investigator', icon: Sparkles },
+    { id: 'cases', label: 'Cases', icon: FolderOpen },
+    { id: 'evaluation', label: 'Model Evaluation', icon: BarChart3 },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'transactions', label: 'Transactions', icon: FileText },
+    ...(user?.permissions?.includes('audit:read') ? [{ id: 'audit', label: 'Audit Log', icon: ScrollText }] : []),
     { id: 'docs', label: 'Architecture', icon: Info },
   ];
 
@@ -301,29 +311,58 @@ export default function Navbar({
             )}
           </div>
 
-          {/* Engine Status Pill */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            borderRadius: '9999px',
-            padding: '6px 12px',
-            fontSize: '0.75rem',
-            fontFamily: 'var(--font-mono)',
-            color: '#22C55E'
-          }}>
-            <span style={{
-              width: '7px',
-              height: '7px',
-              borderRadius: '50%',
-              background: '#22C55E',
-              boxShadow: '0 0 8px #22C55E',
-              display: 'inline-block'
-            }} />
-            <span>50/50 Tests Verified</span>
-          </div>
+          {/* Signed-in user and role */}
+          {user ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: user.role === 'admin' ? 'rgba(184, 255, 61, 0.1)' : 'rgba(56, 189, 248, 0.1)',
+              border: `1px solid ${user.role === 'admin' ? 'rgba(184, 255, 61, 0.35)' : 'rgba(56, 189, 248, 0.35)'}`,
+              borderRadius: '9999px',
+              padding: '5px 6px 5px 12px',
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-mono)',
+              color: user.role === 'admin' ? '#B8FF3D' : '#38BDF8'
+            }}>
+              <UserCheck size={14} />
+              <span>{user.role_label || user.role}</span>
+              <button
+                type="button"
+                onClick={onSignOut}
+                title="Sign out"
+                aria-label="Sign out"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  color: '#FFFFFF',
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <LogOut size={12} />
+                <span>Sign out</span>
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: '9999px',
+              padding: '6px 12px',
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-mono)',
+              color: '#F59E0B'
+            }}>
+              Offline preview
+              <button type="button" onClick={onSignOut} style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>Sign in</button>
+            </div>
+          )}
         </div>
       </div>
     </header>
