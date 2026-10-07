@@ -1,20 +1,19 @@
-import React from 'react';
-import { 
-  Activity, 
-  Users, 
-  Network, 
-  AlertTriangle, 
-  Zap, 
+import {
+  Activity,
+  Users,
+  Network,
+  AlertTriangle,
+  Zap,
   TrendingUp,
   ShieldAlert
 } from 'lucide-react';
 
-export default function TrustStats({ stats, riskDistribution }) {
+export default function TrustStats({ stats }) {
   const statItems = [
     {
       id: 'transactions',
       label: 'Transactions Analyzed',
-      value: stats?.total_transactions ? stats.total_transactions.toLocaleString() : '156',
+      value: (stats?.total_transactions ?? 0).toLocaleString(),
       subtext: 'Synthetic & peer-to-peer volume',
       icon: Activity,
       color: '#B8FF3D',
@@ -23,7 +22,7 @@ export default function TrustStats({ stats, riskDistribution }) {
     {
       id: 'accounts',
       label: 'Accounts Monitored',
-      value: stats?.total_accounts || 57,
+      value: stats?.total_accounts ?? 0,
       subtext: 'Entities in active graph topology',
       icon: Users,
       color: '#38BDF8',
@@ -32,7 +31,7 @@ export default function TrustStats({ stats, riskDistribution }) {
     {
       id: 'networks',
       label: 'Suspicious Networks',
-      value: stats?.suspicious_networks || 34,
+      value: stats?.suspicious_networks ?? 0,
       subtext: 'Strongly connected & cycle groups',
       icon: Network,
       color: '#8B5CF6',
@@ -41,8 +40,8 @@ export default function TrustStats({ stats, riskDistribution }) {
     {
       id: 'high-risk',
       label: 'Elevated Risk Accounts',
-      value: (stats?.high_risk_accounts || 0) + (stats?.medium_risk_accounts || 19),
-      subtext: `${stats?.high_risk_accounts || 1} High / ${(stats?.medium_risk_accounts || 19)} Medium tiers`,
+      value: (stats?.high_risk_accounts ?? 0) + (stats?.medium_risk_accounts ?? 0),
+      subtext: `${stats?.high_risk_accounts ?? 0} High/Critical / ${stats?.medium_risk_accounts ?? 0} Medium`,
       icon: AlertTriangle,
       color: '#EF4444',
       badge: 'FLAGGED ENTITIES',
@@ -50,8 +49,8 @@ export default function TrustStats({ stats, riskDistribution }) {
     {
       id: 'patterns',
       label: 'Detection Patterns',
-      value: '6 / 6',
-      subtext: 'Fan-In, Fan-Out, Chains, Cycles, etc.',
+      value: `${stats?.active_detection_patterns ?? 0} / 7`,
+      subtext: 'Fan-In, Fan-Out, Rapid, Chains, Cycles, Structuring, Clusters',
       icon: Zap,
       color: '#F59E0B',
       badge: 'MEMBER 2 ALGORITHMS',
@@ -59,7 +58,7 @@ export default function TrustStats({ stats, riskDistribution }) {
     {
       id: 'avg-risk',
       label: 'Average Risk Score',
-      value: stats?.average_risk_score ? stats.average_risk_score.toFixed(1) : '32.6',
+      value: stats?.average_risk_score != null ? stats.average_risk_score.toFixed(1) : '0.0',
       subtext: '0–100 Explainable Composite scale',
       icon: TrendingUp,
       color: '#A855F7',

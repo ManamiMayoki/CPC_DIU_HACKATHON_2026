@@ -1,5 +1,4 @@
-import React from 'react';
-import { ShieldCheck, Cpu, Network, CheckCircle2, Layers, AlertCircle, FileText } from 'lucide-react';
+import { ShieldCheck, Cpu, Network, CheckCircle2, Layers, AlertCircle } from 'lucide-react';
 
 export default function ArchitectureModal() {
   return (
@@ -22,7 +21,7 @@ export default function ArchitectureModal() {
           <span>TEAM CONTRACT & SYSTEM TRANSPARENCY</span>
         </div>
         <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-          FlowGuard AI Architecture Specification
+          Cygnus AI Architecture Specification
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '4px' }}>
           End-to-end integration boundaries adhering to the Member 1, Member 2, and Member 3 contracts.
@@ -142,7 +141,7 @@ export default function ArchitectureModal() {
             fontSize: '0.78rem',
             fontWeight: 700
           }}>
-            42 PASSED / 0 FAILED (100%)
+            50 PASSED / 0 FAILED (100%)
           </div>
         </div>
 
@@ -157,16 +156,20 @@ export default function ArchitectureModal() {
           </div>
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>test_scenarios_benchmark.py</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>9 Tests Passed</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>11 Tests Passed</div>
           </div>
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>test_security.py</div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>12 Tests Passed</div>
           </div>
+          <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>test_upgrade.py + test_regressions.py</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>6 Tests Passed</div>
+          </div>
         </div>
 
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Benchmark verified: All 7 synthetic scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK) 
+          Benchmark verified: All 9 synthetic scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING) 
           passed false-positive and target sensitivity thresholds with zero code regression.
         </div>
       </div>

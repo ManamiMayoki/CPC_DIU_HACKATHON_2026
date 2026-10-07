@@ -2,7 +2,7 @@
 
 NOTE: This generator produces synthetic test transactions for graph and ML algorithm
 evaluation. These synthetic scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT,
-CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK) are testing artifacts and do NOT represent
+CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING) are testing artifacts and do NOT represent
 real-world financial-crime labels, banking definitions, or proof of illegal activity.
 """
 
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import random
 from typing import Any, Dict, List, Optional
 
@@ -128,33 +129,32 @@ class SyntheticDataGenerator:
         destination_account: str = "ACC_RAPID_OUT",
         base_time: Optional[datetime.datetime] = None,
     ) -> List[Dict[str, Any]]:
-        """Inflow received and immediately forwarded onwards within minutes (passthrough)."""
+        """Inflows received and forwarded onwards within minutes, three times in one afternoon (passthrough)."""
         if base_time is None:
             base_time = datetime.datetime(2026, 3, 1, 12, 0, 0)
 
-        in_amount = 5000.0
-        # Intermediary forwards 95% of incoming funds shortly after
-        out_amount = 4750.0
+        # (minutes after base_time, amount received, minutes until 95% is forwarded)
+        rounds = [(0, 5000.0, 5), (90, 8000.0, 4), (180, 6500.0, 3)]
 
-        t1 = base_time
-        t2 = t1 + datetime.timedelta(minutes=5)
-
-        return [
-            {
+        transactions = []
+        for offset, in_amount, delay in rounds:
+            t_in = base_time + datetime.timedelta(minutes=offset)
+            t_out = t_in + datetime.timedelta(minutes=delay)
+            transactions.append({
                 "transaction_id": self._next_tx_id(),
                 "sender_id": source_account,
                 "receiver_id": intermediary_account,
                 "amount": in_amount,
-                "timestamp": self._format_time(t1),
-            },
-            {
+                "timestamp": self._format_time(t_in),
+            })
+            transactions.append({
                 "transaction_id": self._next_tx_id(),
                 "sender_id": intermediary_account,
                 "receiver_id": destination_account,
-                "amount": out_amount,
-                "timestamp": self._format_time(t2),
-            },
-        ]
+                "amount": round(in_amount * 0.95, 2),
+                "timestamp": self._format_time(t_out),
+            })
+        return transactions
 
     def generate_chain_scenario(
         self,
@@ -254,6 +254,87 @@ class SyntheticDataGenerator:
 
         return transactions
 
+    def _tx(self, sender: str, receiver: str, amount: float, when: datetime.datetime) -> Dict[str, Any]:
+        return {
+            "transaction_id": self._next_tx_id(),
+            "sender_id": sender,
+            "receiver_id": receiver,
+            "amount": round(amount, 2),
+            "timestamp": self._format_time(when),
+        }
+
+    def generate_structuring_scenario(
+        self,
+        source_account: str = "ACC_STRUCT_SRC",
+        destination_account: str = "ACC_STRUCT_DST",
+        num_transfers: int = 5,
+        threshold: float = 10000.0,
+        base_time: Optional[datetime.datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """A large sum split into several transfers that each stay just under a threshold."""
+        if base_time is None:
+            base_time = datetime.datetime(2026, 3, 1, 18, 0, 0)
+
+        transactions: List[Dict[str, Any]] = []
+        current_time = base_time
+        for _ in range(num_transfers):
+            current_time += datetime.timedelta(minutes=self.rng.randint(40, 80))
+            amount = self.rng.uniform(0.94, 0.995) * threshold
+            transactions.append(self._tx(source_account, destination_account, amount, current_time))
+        return transactions
+
+    def generate_mule_ring_scenario(
+        self,
+        prefix: str = "ACC_MULE",
+        num_feeders: int = 8,
+        num_mules: int = 4,
+        threshold: float = 10000.0,
+        base_time: Optional[datetime.datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """An MFS money-mule ring that combines several typologies in one network.
+
+        1. Feeder wallets send near-threshold amounts to a collector hub within minutes
+           (fan-in + structuring).
+        2. The hub forwards each receipt almost immediately to a set of mule wallets
+           (rapid movement + fan-out).
+        3. The mules pass the funds on to a cash-out agent wallet (multi-hop chain).
+        4. The agent returns part of the money to the hub, closing a loop (circular flow).
+        """
+        if base_time is None:
+            base_time = datetime.datetime(2026, 3, 1, 16, 0, 0)
+
+        hub = f"{prefix}_HUB"
+        cashout = f"{prefix}_CASHOUT"
+        mules = [f"{prefix}_{i + 1:02d}" for i in range(num_mules)]
+        transactions: List[Dict[str, Any]] = []
+        current_time = base_time
+
+        mule_received: Dict[str, List[float]] = {m: [] for m in mules}
+        for i in range(num_feeders):
+            current_time += datetime.timedelta(minutes=self.rng.randint(2, 5))
+            in_amount = self.rng.uniform(0.93, 0.99) * threshold
+            transactions.append(self._tx(f"{prefix}_SRC_{i:03d}", hub, in_amount, current_time))
+
+            # Hub forwards most of each receipt within a few minutes
+            mule = mules[i % num_mules]
+            out_amount = in_amount * self.rng.uniform(0.96, 0.99)
+            transactions.append(
+                self._tx(hub, mule, out_amount, current_time + datetime.timedelta(minutes=self.rng.randint(1, 3)))
+            )
+            mule_received[mule].append(out_amount)
+
+        # Mules pass funds on to the cash-out agent shortly after
+        current_time += datetime.timedelta(minutes=5)
+        for mule in mules:
+            for amount in mule_received[mule]:
+                current_time += datetime.timedelta(minutes=self.rng.randint(2, 6))
+                transactions.append(self._tx(mule, cashout, amount * self.rng.uniform(0.95, 0.98), current_time))
+
+        # Part of the money comes back to the hub, closing the loop
+        current_time += datetime.timedelta(minutes=20)
+        transactions.append(self._tx(cashout, hub, mule_received[mules[0]][0] * 0.9, current_time))
+        return transactions
+
     def generate_comprehensive_dataset(self) -> List[Dict[str, Any]]:
         """Generates a complete dataset combining normal transactions and each controlled scenario."""
         all_tx: List[Dict[str, Any]] = []
@@ -264,6 +345,9 @@ class SyntheticDataGenerator:
         all_tx.extend(self.generate_chain_scenario(chain_length=5))
         all_tx.extend(self.generate_circular_flow_scenario())
         all_tx.extend(self.generate_coordinated_network_scenario(network_size=5))
+        # Added after the original scenarios so their random draws (and transactions) are unchanged
+        all_tx.extend(self.generate_structuring_scenario())
+        all_tx.extend(self.generate_mule_ring_scenario())
 
         # Sort chronologically
         all_tx.sort(key=lambda x: x["timestamp"])
@@ -273,7 +357,7 @@ class SyntheticDataGenerator:
 def main() -> None:
     generator = SyntheticDataGenerator(seed=42)
     dataset = generator.generate_comprehensive_dataset()
-    output_path = "b:/Ai hackthon/CPC_DIU_HACKATHON_2026/data/synthetic/transactions_sample.json"
+    output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transactions_sample.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2)
     print(f"Generated {len(dataset)} synthetic transactions into {output_path}")

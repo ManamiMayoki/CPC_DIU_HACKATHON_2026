@@ -1,19 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
-  Maximize2, 
-  Search, 
-  ArrowRight, 
-  Layers, 
-  AlertTriangle, 
-  ShieldAlert, 
-  Zap, 
-  ArrowUpRight, 
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  ArrowRight,
+  ArrowUpRight,
   ArrowDownLeft,
   X,
-  Sliders,
   Sparkles,
   Info
 } from 'lucide-react';
@@ -23,8 +16,6 @@ export default function FollowTheMoney({
   initialEdges = [],
   selectedAccountId,
   onSelectAccount,
-  demoScenarios = [],
-  onSelectScenario,
 }) {
   const containerRef = useRef(null);
   const [zoom, setZoom] = useState(1);
@@ -32,17 +23,19 @@ export default function FollowTheMoney({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  const [activeAccountInput, setActiveAccountInput] = useState(selectedAccountId || 'ACC_FANIN_HUB');
+  const [activeAccountInput, setActiveAccountInput] = useState(selectedAccountId || 'ACC_MULE_HUB');
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [hoveredEdge, setHoveredEdge] = useState(null);
   const [hopsFilter, setHopsFilter] = useState(1); // 1-hop or 2-hop
-  const [riskFilter, setRiskFilter] = useState('ALL'); // ALL, ELEVATED, PATTERNS_ONLY
+  const [riskFilter] = useState('ALL'); // ALL, ELEVATED, PATTERNS_ONLY
 
   // Sync selectedAccountId from prop
   useEffect(() => {
     if (selectedAccountId) {
+      // Keep the local search box in sync when another view selects an account.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveAccountInput(selectedAccountId);
       const found = initialNodes.find(n => n.id === selectedAccountId);
       if (found) setSelectedNode(found);
@@ -50,7 +43,7 @@ export default function FollowTheMoney({
   }, [selectedAccountId, initialNodes]);
 
   // Determine current center/target account
-  const targetId = activeAccountInput || 'ACC_FANIN_HUB';
+  const targetId = activeAccountInput || 'ACC_MULE_HUB';
   const targetNode = useMemo(() => {
     return initialNodes.find(n => n.id.toLowerCase() === targetId.toLowerCase()) || initialNodes[0];
   }, [initialNodes, targetId]);
@@ -89,9 +82,10 @@ export default function FollowTheMoney({
   // Set selected node to target node if none is selected
   useEffect(() => {
     if (targetNode && (!selectedNode || !filteredNodes.find(n => n.id === selectedNode.id))) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedNode(targetNode);
     }
-  }, [targetNode, filteredNodes]);
+  }, [targetNode, filteredNodes, selectedNode]);
 
   // Calculate layout coordinates for nodes (Radial / Force-inspired centered on target)
   const nodePositions = useMemo(() => {
@@ -108,7 +102,6 @@ export default function FollowTheMoney({
 
     // Other nodes in concentric orbits
     const otherNodes = filteredNodes.filter(n => n.id !== targetNode.id);
-    const count = otherNodes.length;
 
     // Classify incoming senders vs outgoing receivers
     const senders = [];
@@ -455,7 +448,6 @@ export default function FollowTheMoney({
 
               const isTarget = targetNode && node.id === targetNode.id;
               const isSelected = selectedNode && selectedNode.id === node.id;
-              const isHovered = hoveredNode && hoveredNode.id === node.id;
               const nodeFill = getNodeFill(node);
               const radius = isTarget ? 20 : node.patterns?.length > 0 ? 15 : 12;
 
@@ -563,8 +555,8 @@ export default function FollowTheMoney({
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'grid', gap: '3px' }}>
                 <div>Risk Score: <strong style={{ color: '#FFFFFF' }}>{hoveredNode.risk_score}</strong> / 100</div>
                 <div>Degree: In {hoveredNode.in_degree} • Out {hoveredNode.out_degree}</div>
-                <div>Inflow: <strong style={{ color: '#22C55E' }}>${hoveredNode.incoming_amount?.toLocaleString()}</strong></div>
-                <div>Outflow: <strong style={{ color: '#EF4444' }}>${hoveredNode.outgoing_amount?.toLocaleString()}</strong></div>
+                <div>Inflow: <strong style={{ color: '#22C55E' }}>৳{hoveredNode.incoming_amount?.toLocaleString()}</strong></div>
+                <div>Outflow: <strong style={{ color: '#EF4444' }}>৳{hoveredNode.outgoing_amount?.toLocaleString()}</strong></div>
                 {hoveredNode.patterns?.length > 0 && (
                   <div style={{ color: '#F59E0B', marginTop: '4px' }}>
                     Patterns: {hoveredNode.patterns.join(', ')}
@@ -593,7 +585,7 @@ export default function FollowTheMoney({
                 TRANSACTION TRANSFER
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#B8FF3D', fontFamily: 'var(--font-mono)', margin: '4px 0' }}>
-                ${hoveredEdge.amount?.toLocaleString()}
+                ৳{hoveredEdge.amount?.toLocaleString()}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                 {hoveredEdge.source} → {hoveredEdge.target}
@@ -664,7 +656,7 @@ export default function FollowTheMoney({
                   <span>Total Inflow</span>
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
-                  ${(selectedNode.incoming_amount || 0).toLocaleString()}
+                  ৳{(selectedNode.incoming_amount || 0).toLocaleString()}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   {selectedNode.in_degree || 0} distinct senders
@@ -677,7 +669,7 @@ export default function FollowTheMoney({
                   <span>Total Outflow</span>
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
-                  ${(selectedNode.outgoing_amount || 0).toLocaleString()}
+                  ৳{(selectedNode.outgoing_amount || 0).toLocaleString()}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   {selectedNode.out_degree || 0} distinct receivers
@@ -779,7 +771,7 @@ export default function FollowTheMoney({
               </button>
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#B8FF3D', fontFamily: 'var(--font-mono)' }}>
-              ${selectedEdge.amount?.toLocaleString()}
+              ৳{selectedEdge.amount?.toLocaleString()}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#FFFFFF', margin: '4px 0' }}>
               <strong>{selectedEdge.source}</strong> → <strong>{selectedEdge.target}</strong>

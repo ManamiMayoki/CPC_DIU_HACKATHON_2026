@@ -146,6 +146,37 @@ class TestSyntheticScenariosBenchmark:
         assert len(coord_accs) >= 3
 
 
+    def test_benchmark_structuring_scenario(self, generator):
+        """STRUCTURING scenario: repeated transfers kept just under the 10,000 threshold."""
+        txs = generator.generate_normal_transactions(num_accounts=10, num_transactions=30)
+        txs.extend(generator.generate_structuring_scenario())
+
+        res = run_pipeline(txs, random_state=42)
+        assert res["pipeline_status"] == "SUCCESS"
+
+        accounts = {a["account_id"]: a for a in res["accounts"]}
+        assert "structuring" in accounts["ACC_STRUCT_SRC"]["patterns"]
+        assert "structuring" in accounts["ACC_STRUCT_DST"]["patterns"]
+        assert any("Structuring detected" in ev for ev in accounts["ACC_STRUCT_SRC"]["evidence"])
+        assert accounts["ACC_STRUCT_SRC"]["risk_score"] >= 40.0
+        # Ordinary small payments never look like structuring
+        assert not any("structuring" in a["patterns"] for a in res["accounts"] if "ACC_NORM" in a["account_id"])
+
+    def test_benchmark_mule_ring_scenario(self, generator):
+        """MULE_RING scenario: combined typologies push the hub into the top risk tiers."""
+        txs = generator.generate_normal_transactions(num_accounts=10, num_transactions=30)
+        txs.extend(generator.generate_mule_ring_scenario())
+
+        res = run_pipeline(txs, random_state=42)
+        assert res["pipeline_status"] == "SUCCESS"
+
+        hub = next(a for a in res["accounts"] if a["account_id"] == "ACC_MULE_HUB")
+        for pattern in ("fan_in", "rapid_movement", "structuring", "circular_flow"):
+            assert pattern in hub["patterns"]
+        assert hub["risk_level"] in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+        assert res["accounts"][0]["account_id"].startswith("ACC_MULE")
+
+
 class TestBenchmarkPropertiesAndReproducibility:
     """Verifies strict deterministic reproducibility, score boundaries, and contract integrity."""
 

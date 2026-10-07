@@ -188,7 +188,8 @@ class ExplainableRiskScorer:
     2. Graph Suspicious Topology Signals (Weight: 40% / 0.40)
        - Circular flows (cycles): up to 35 pts
        - Rapid fund movement (passthrough): up to 30 pts
-       - Coordinated network cluster membership: up to 30 pts
+       - Coordinated network cluster membership: up to 40 pts
+       - Structuring (near-threshold splitting): up to 30 pts
        - Fan-in collector pattern: up to 25 pts
        - Fan-out distributor pattern: up to 25 pts
        - Long chain participation (>= 3 hops): up to 20 pts
@@ -266,10 +267,12 @@ class ExplainableRiskScorer:
         if pattern_flags.get("rapid_movement", False):
             graph_pts += 30.0
         if pattern_flags.get("coordinated_network", False):
+            graph_pts += 40.0
+        if pattern_flags.get("structuring", False) or feature_row.get("structuring_detected", 0) > 0:
             graph_pts += 30.0
-        if pattern_flags.get("fan_in", False) or feature_row.get("fan_in_score", 0.0) >= 0.7:
+        if pattern_flags.get("fan_in", False):
             graph_pts += 25.0
-        if pattern_flags.get("fan_out", False) or feature_row.get("fan_out_score", 0.0) >= 0.7:
+        if pattern_flags.get("fan_out", False):
             graph_pts += 25.0
         if feature_row.get("chain_length", 0) >= 3:
             graph_pts += 20.0

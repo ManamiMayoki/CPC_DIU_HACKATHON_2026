@@ -1,16 +1,21 @@
 services:
   backend:
-    build: ./backend
-    container_name: flowguard-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cygnus-backend
     ports:
       - "5001:5000"   # Changed host port from 5000 to 5001
     environment:
       - PORT=5000
+      # Optional: export ANTHROPIC_API_KEY before `docker-compose up` to let Claude write
+      # AI Investigator narratives. Without it the rule-based briefing is used.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     restart: always
 
   frontend:
     build: ./frontend
-    container_name: flowguard-frontend
+    container_name: cygnus-frontend
     ports:
       - "3001:80"     # Changed host port from 3000 to 3001
     depends_on:
@@ -18,15 +23,19 @@ services:
     restart: always
 
   graph-engine:
-    build: ./graph-engine
-    container_name: flowguard-graph-engine
+    build:
+      context: .
+      dockerfile: graph-engine/Dockerfile
+    container_name: cygnus-graph-engine
     ports:
       - "8000:8000"
     restart: always
 
   ml-engine:
-    build: ./ml
-    container_name: flowguard-ml-engine
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    container_name: cygnus-ml-engine
     ports:
       - "8001:8001"
     restart: always

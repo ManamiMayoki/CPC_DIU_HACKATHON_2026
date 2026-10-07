@@ -4,7 +4,7 @@
 
 ## 1. Executive Summary
 
-This repository hosts the core intelligence layer of **FlowGuard AI**—an end-to-end framework combining graph topology algorithms and unsupervised machine learning to detect suspicious financial transaction patterns on synthetic datasets.
+This repository hosts the core intelligence layer of **Cygnus AI**—an end-to-end framework combining graph topology algorithms and unsupervised machine learning to detect suspicious financial transaction patterns on synthetic datasets.
 
 ```
 Synthetic Transactions
@@ -13,7 +13,7 @@ Transaction Validation (Security)
         ↓
 NetworkX Transaction Graph
         ↓
-Network Pattern Detection (Fan-In, Fan-Out, Cycles, Chains, Rapid Movement, Coordinated Networks)
+Network Pattern Detection (Fan-In, Fan-Out, Time-Ordered Cycles, Chains, Rapid Movement, Structuring, Coordinated Networks)
         ↓
 Graph Topological Features + ML Behavioral Features
         ↓
@@ -21,7 +21,7 @@ Isolation Forest Anomaly Detection
         ↓
 Explainable Composite Risk Scoring (0–100)
         ↓
-Grounded Evidence Generation
+Grounded Evidence Generation + AI Investigator Case Briefing
         ↓
 Structured Integration Contract for Member 1
 ```
@@ -32,14 +32,15 @@ Structured Integration Contract for Member 1
 
 ### Member 2: Graph Algorithms & Network Detection
 - **`graph-engine/graph.py`**: Builds NetworkX directed graphs (`nx.DiGraph` & `nx.MultiDiGraph`) with account nodes and transaction edges preserving amounts, timestamps, and IDs.
-- **`graph-engine/patterns.py`**: Algorithmic detectors for 6 key suspicious patterns:
-  1. **Fan-In**: Aggregation from multiple accounts to one collector.
-  2. **Fan-Out**: Dispersion from one distributor to multiple accounts.
-  3. **Circular Flows**: Directed cycles ($A \to B \to C \to A$) detecting potential layering loops.
+- **`graph-engine/patterns.py`**: Algorithmic detectors for 7 suspicious patterns:
+  1. **Fan-In**: Many distinct senders into one collector, with a burst window (most senders within 2 hours).
+  2. **Fan-Out**: One distributor to many distinct receivers, with the same burst window.
+  3. **Circular Flows**: Directed cycles ($A \to B \to C \to A$) that must happen **in time order** within 6 hours and return at least 50% of the value, so random peer-to-peer loops are not flagged.
   4. **Transaction Chains**: Multi-hop linear paths ($\ge 3$ hops).
-  5. **Rapid Fund Movement**: Inflow followed by immediate comparable outflow within minutes.
-  6. **Coordinated Networks**: Dense interconnected account clusters.
-- **`graph-engine/features.py`**: Account-level graph feature extraction (`in_degree`, `out_degree`, `weighted_degrees`, `counterparties`, `cycle_count`, `chain_length`, `network_size`, `suspicious_neighbor_count`).
+  5. **Rapid Fund Movement**: An inflow of at least 1,000 followed by a comparable outflow (70% to 110%) within the hour.
+  6. **Structuring (smurfing)**: 3 or more transfers just under the reporting threshold (85% to 100% of 10,000) within 24 hours, flagging both the splitter and the collector.
+  7. **Coordinated Networks**: Dense interconnected clusters of 4 or more accounts.
+- **`graph-engine/features.py`**: Account-level graph feature extraction (`in_degree`, `out_degree`, `weighted_degrees`, `counterparties`, `cycle_count`, `chain_length`, `structuring_detected`, `near_threshold_tx_count`, `network_size`, `suspicious_neighbor_count`).
 - **`graph-engine/engine.py`**: Graph analysis orchestrator.
 
 ### Member 3: ML Anomaly Detection, Risk Scoring & Security
@@ -47,7 +48,9 @@ Structured Integration Contract for Member 1
 - **`ml/features.py`**: Behavioral feature extraction (transaction counts, inflows/outflows, velocity, ratios) and merged ML feature vector creation.
 - **`ml/model.py`**: Unsupervised anomaly detector using `IsolationForest` with reproducible `random_state`, calibrated $0-100$ scoring, prototype risk tiers (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and a transparent composite risk scorer ($40\%$ ML $+ 40\%$ Graph $+ 20\%$ Behavioral).
 - **`ml/inference.py`**: Complete pipeline runner with auditable, metric-grounded evidence generation.
-- **`data/synthetic/generator.py`**: Synthetic transaction generator supporting controlled scenarios (`NORMAL`, `FAN_IN`, `FAN_OUT`, `RAPID_MOVEMENT`, `CHAIN`, `CIRCULAR_FLOW`, `COORDINATED_NETWORK`).
+- **`ml/investigator.py`**: AI Investigator case briefing for every account (typology, summary, key findings, next steps, linked accounts), built only from the computed evidence, so it works offline.
+- **`backend/src/investigator.js`**: Optional Claude narrative. With `ANTHROPIC_API_KEY` set, `GET /api/investigate/:id` asks Claude to rewrite the briefing as an analyst narrative using only the pipeline's facts; without a key, or on any error, it returns the rule-based briefing.
+- **`data/synthetic/generator.py`**: Synthetic transaction generator supporting controlled scenarios (`NORMAL`, `FAN_IN`, `FAN_OUT`, `RAPID_MOVEMENT`, `CHAIN`, `CIRCULAR_FLOW`, `COORDINATED_NETWORK`, `STRUCTURING`, `MULE_RING`).
 
 ---
 
@@ -66,13 +69,13 @@ pip install networkx pandas numpy scikit-learn pytest
 ```bash
 python data/synthetic/generator.py
 ```
-*Outputs `data/synthetic/transactions_sample.json` containing 156 synthetic transactions covering normal and anomalous scenarios.*
+*Outputs `data/synthetic/transactions_sample.json` containing 190 synthetic transactions across 73 accounts covering normal and anomalous scenarios.*
 
 ### 2. Run Graph Analysis Engine
 ```bash
 python graph-engine/engine.py
 ```
-*Constructs the NetworkX directed graph, runs all 6 topology detectors, extracts graph features, and prints summary metrics.*
+*Constructs the NetworkX directed graph, runs all 7 topology detectors, extracts graph features, and prints summary metrics.*
 
 ### 3. Run Full ML & Risk Pipeline
 ```bash
@@ -84,13 +87,29 @@ python ml/inference.py
 ```bash
 python evaluate_benchmark.py
 ```
-*Evaluates detection and risk scoring across all controlled scenarios: NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK.*
+*Evaluates detection and risk scoring across all 9 controlled scenarios: NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING.*
 
 ### 5. Run Complete Pytest Suite
 ```bash
 python -m pytest tests/ -v
 ```
-*Executes 42 unit, integration, benchmark, and security tests.*
+*Executes 50 unit, integration, benchmark, security, and regression tests.*
+
+### 6. Run the Full Stack with Docker
+```bash
+docker compose up --build        # Docker Compose v2
+docker-compose up --build        # older Compose v1
+```
+*Starts the dashboard on port 3001, the backend API on 5001, the graph engine on 8000 (`/docs`, `/health`, `POST /analyze`) and the ML engine on 8001 (`/docs`, `/health`, `POST /pipeline`). The frontend proxies `/api` to the backend.*
+
+*Optional: `export ANTHROPIC_API_KEY=...` before starting to let Claude write AI Investigator narratives. Never commit the key; without it the dashboard uses the rule-based briefing.*
+
+### 7. Regenerate the Dashboard's Offline Data
+```bash
+python data/synthetic/generator.py
+python backend/engine_adapter.py --out frontend/public/data/initial_state.json
+```
+*The dashboard falls back to this file when the backend is unreachable, so regenerate it after changing detection or scoring logic.*
 
 ---
 
@@ -100,9 +119,11 @@ python -m pytest tests/ -v
 | :--- | :--- | :--- | :--- |
 | **`tests/test_graph.py`** | Graph construction, node/edge attributes, timestamp robustness, Fan-In, Fan-Out, Circular Flows, Chains, Rapid Movement, Coordinated Networks, Graph Features | 13 tests | **PASSED** |
 | **`tests/test_ml.py`** | Behavioral features, combined vector merging, Isolation Forest fitting, anomaly scores, normalized risk scores, reproducibility, risk levels, evidence generation | 8 tests | **PASSED** |
-| **`tests/test_scenarios_benchmark.py`** | Controlled scenario evaluations (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK), deterministic reproducibility, [0, 100] bounds | 9 tests | **PASSED** |
+| **`tests/test_scenarios_benchmark.py`** | Controlled scenario evaluations (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING), deterministic reproducibility, [0, 100] bounds | 11 tests | **PASSED** |
 | **`tests/test_security.py`** | Missing fields, invalid account IDs, self-transfers, negative amounts, zero amounts, NaN/Inf, extreme value limits, invalid timestamps, malformed types, duplicate IDs, empty datasets, strict exception raising | 12 tests | **PASSED** |
-| **Total** | Full Layer Test Coverage | **42 tests** | **100% PASSED** |
+| **`tests/test_regressions.py`** | Mixed-timezone timestamps, identical risk scores across Python hash seeds | 2 tests | **PASSED** |
+| **`tests/test_upgrade.py`** | Structuring detector, rejection of out-of-order loops, AI Investigator briefing built from evidence | 4 tests | **PASSED** |
+| **Total** | Full Layer Test Coverage | **50 tests** | **100% PASSED** |
 
 
 ---
@@ -118,8 +139,8 @@ results = run_pipeline(transactions)
 # Returns structured dictionary matching docs/api-contract.md
 ```
 
-Detailed JSON schema, payload specifications, and sample responses are documented in [docs/api-contract.md](file:///b:/Ai%20hackthon/CPC_DIU_HACKATHON_2026/docs/api-contract.md).  
-Pipeline architecture and boundaries are documented in [docs/architecture.md](file:///b:/Ai%20hackthon/CPC_DIU_HACKATHON_2026/docs/architecture.md).
+Detailed JSON schema, payload specifications, and sample responses are documented in [docs/api-contract.md](docs/api-contract.md).  
+Pipeline architecture and boundaries are documented in [docs/architecture.md](docs/architecture.md).
 
 ---
 

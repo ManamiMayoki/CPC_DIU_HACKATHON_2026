@@ -1,78 +1,62 @@
-import React from 'react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  Legend 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
-import { TrendingUp, BarChart2, PieChart as PieIcon, ShieldAlert } from 'lucide-react';
+import { TrendingUp, BarChart2, PieChart as PieIcon } from 'lucide-react';
 
-export default function AnalyticsSection({ analytics = {}, riskDistribution = {}, stats = {} }) {
+// Custom Dark Tooltip
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        background: 'rgba(13, 17, 26, 0.95)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        padding: '10px 14px',
+        borderRadius: '10px',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.8rem'
+      }}>
+        <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>{label}</div>
+        {payload.map((entry, index) => (
+          <div key={`item-${index}`} style={{ color: entry.color || '#FFFFFF', fontWeight: 700 }}>
+            {entry.name}: {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+export default function AnalyticsSection({ analytics = {}, riskDistribution = {} }) {
   // Volume Timeline Data
   const volumeData = analytics.volume_timeline && analytics.volume_timeline.length > 0
     ? analytics.volume_timeline
-    : [
-        { time: '09:00', volume: 1200, count: 12 },
-        { time: '10:00', volume: 4600, count: 24 },
-        { time: '11:00', volume: 3800, count: 20 },
-        { time: '12:00', volume: 9750, count: 32 },
-        { time: '13:00', volume: 8200, count: 28 },
-        { time: '14:00', volume: 10500, count: 22 },
-        { time: '15:00', volume: 14200, count: 18 },
-      ];
+    : [];
 
   // Risk Distribution Data
   const riskPieData = [
-    { name: 'Low Risk', value: riskDistribution.LOW || 37, color: '#22C55E' },
-    { name: 'Medium Risk', value: riskDistribution.MEDIUM || 19, color: '#F59E0B' },
-    { name: 'High Risk', value: riskDistribution.HIGH || 1, color: '#EF4444' },
-    { name: 'Critical Risk', value: riskDistribution.CRITICAL || 0, color: '#DC2626' },
+    { name: 'Low Risk', value: riskDistribution.LOW ?? 0, color: '#22C55E' },
+    { name: 'Medium Risk', value: riskDistribution.MEDIUM ?? 0, color: '#F59E0B' },
+    { name: 'High Risk', value: riskDistribution.HIGH ?? 0, color: '#EF4444' },
+    { name: 'Critical Risk', value: riskDistribution.CRITICAL ?? 0, color: '#DC2626' },
   ].filter(d => d.value > 0);
 
   // Pattern Frequency Data
   const patternData = analytics.pattern_frequency && analytics.pattern_frequency.length > 0
     ? analytics.pattern_frequency
-    : [
-        { pattern: 'Circular Flow', count: 26, color: '#EF4444' },
-        { pattern: 'Rapid Movement', count: 14, color: '#F59E0B' },
-        { pattern: 'Fan-In Hub', count: 7, color: '#B8FF3D' },
-        { pattern: 'Fan-Out Hub', count: 7, color: '#38BDF8' },
-        { pattern: 'Coord Cluster', count: 7, color: '#8B5CF6' },
-        { pattern: 'Multi Chain', count: 5, color: '#A855F7' },
-      ];
-
-  // Custom Dark Tooltip
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div style={{
-          background: 'rgba(13, 17, 26, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          padding: '10px 14px',
-          borderRadius: '10px',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.8rem'
-        }}>
-          <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>{label}</div>
-          {payload.map((entry, index) => (
-            <div key={`item-${index}`} style={{ color: entry.color || '#FFFFFF', fontWeight: 700 }}>
-              {entry.name}: {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+    : [];
 
   return (
     <section style={{ maxWidth: '1440px', margin: '0 auto', padding: '36px 24px' }}>
@@ -120,7 +104,7 @@ export default function AnalyticsSection({ analytics = {}, riskDistribution = {}
               </div>
               <div>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF' }}>Transaction Volume Over Time</h4>
-                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Chronological monetary movement ($)</span>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Chronological monetary movement (BDT)</span>
               </div>
             </div>
 
@@ -164,7 +148,7 @@ export default function AnalyticsSection({ analytics = {}, riskDistribution = {}
                 <Area 
                   type="monotone" 
                   dataKey="volume" 
-                  name="Volume ($)" 
+                  name="Volume (BDT)" 
                   stroke="#38BDF8" 
                   strokeWidth={2.5} 
                   fillOpacity={1} 
