@@ -1,4 +1,4 @@
-name: FlowGuard AI CI/CD
+name: Cygnus AI CI/CD
 
 on:
   push:

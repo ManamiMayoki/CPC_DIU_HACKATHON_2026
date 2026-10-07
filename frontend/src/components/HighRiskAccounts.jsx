@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Search, ArrowRight, ShieldAlert, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { Search, ArrowRight, ShieldAlert } from 'lucide-react';
 
 export default function HighRiskAccounts({ accounts = [], onInvestigateAccount }) {
   const [filterTier, setFilterTier] = useState('ALL'); // ALL, CRITICAL, HIGH, MEDIUM, LOW
@@ -180,9 +180,9 @@ export default function HighRiskAccounts({ accounts = [], onInvestigateAccount }
 
                   {/* Financial Flow */}
                   <td style={{ padding: '14px 20px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
-                    <span style={{ color: '#22C55E' }}>+${inAmount.toLocaleString()}</span>
+                    <span style={{ color: '#22C55E' }}>+৳{inAmount.toLocaleString()}</span>
                     <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>/</span>
-                    <span style={{ color: '#EF4444' }}>-${outAmount.toLocaleString()}</span>
+                    <span style={{ color: '#EF4444' }}>-৳{outAmount.toLocaleString()}</span>
                   </td>
 
                   {/* Action */}

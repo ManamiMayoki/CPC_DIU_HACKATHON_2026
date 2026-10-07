@@ -1,4 +1,4 @@
-# FlowGuard AI Architecture Specification
+# Cygnus AI Architecture Specification
 
 > **Team Scope:** Member 2 (Graph & Networks) & Member 3 (ML, Risk Scoring, Security & Testing)  
 > **Target Consumer:** Member 1 (Product, Frontend & Backend Integration)
@@ -49,12 +49,13 @@ graph TD
 
 ### Stage 3: Suspicious Network Pattern Detection (`graph-engine/patterns.py`)
 Algorithmic detection of structural anomalies without claiming proof of crime:
-1. **Fan-In:** Accounts with high in-degree ($\ge 4$) and high in-to-out ratio ($\ge 2.0$), identifying potential money aggregation hubs.
-2. **Fan-Out:** Accounts dispersing funds across many counterparties ($\ge 4$) with high out-to-in ratio ($\ge 2.0$), identifying potential dispersion hubs.
-3. **Rapid Fund Movement:** Intermediary accounts that receive funds and forward $\ge 70\%$ of the amount to a third party within a tight temporal window (e.g. $\le 1$ hour).
+1. **Fan-In:** Accounts with high in-degree ($\ge 4$) and high in-to-out ratio ($\ge 2.0$), with most senders arriving inside a 2-hour burst window, identifying potential money aggregation hubs.
+2. **Fan-Out:** Accounts dispersing funds across many counterparties ($\ge 4$) with high out-to-in ratio ($\ge 2.0$) inside a 2-hour burst window, identifying potential dispersion hubs.
+3. **Rapid Fund Movement:** Intermediary accounts that receive at least 1,000 and forward 70% to 110% of it to a third party within 1 hour.
 4. **Transaction Chains:** Multi-hop linear paths ($A \to B \to C \to D \dots$) spanning $\ge 3$ consecutive hops.
-5. **Circular Flows:** Directed simple cycles ($A \to B \to C \to A$) spanning 3 to 6 hops, identifying potential layering loops.
-6. **Coordinated Account Networks:** Dense clusters and strongly connected components ($\ge 3$ nodes, density $\ge 0.4$) engaging in high-frequency internal transactions.
+5. **Circular Flows:** Directed simple cycles ($A \to B \to C \to A$) spanning 3 to 6 hops whose hops happen **in time order** within 6 hours and return $\ge 50\%$ of the value (and no more than 110%), identifying potential layering loops. Cycles are enumerated on integer-relabelled nodes so results are deterministic.
+6. **Structuring (smurfing):** $\ge 3$ transfers between 85% and 100% of the reporting threshold (default 10,000) inside 24 hours, flagging the splitting sender and the collecting receiver.
+7. **Coordinated Account Networks:** Dense clusters and strongly connected components ($\ge 4$ nodes, density $\ge 0.4$) engaging in high-frequency internal transactions.
 
 ### Stage 4: Graph Feature Engineering (`graph-engine/features.py`)
 Decoupled extraction of account-level topological signals:
@@ -64,6 +65,7 @@ Decoupled extraction of account-level topological signals:
 - `fan_in_score`, `fan_out_score`
 - `cycle_detected`, `cycle_count`
 - `chain_length`, `network_size`, `suspicious_neighbor_count`
+- `structuring_detected`, `near_threshold_tx_count`
 
 ### Stage 5: Behavioral Feature Extraction (`ml/features.py`)
 Statistical behavioral metrics derived per account:
@@ -95,12 +97,18 @@ Statistical behavioral metrics derived per account:
 Mathematical, transparent linear combination without hardcoded brittle thresholds:
 $$\text{Risk Score} = 0.40 \times \text{ML Anomaly Score} + 0.40 \times \text{Graph Pattern Score} + 0.20 \times \text{Behavioral Score}$$
 - Dynamically calibrates behavioral thresholds against population percentiles ($p_{75}, p_{90}$) of the current dataset.
+- Graph pattern points: coordinated cluster 40, circular flow 35, rapid movement 30, structuring 30, fan-in 25, fan-out 25, chain 20, suspicious neighbours 15 (capped at 100).
 - Decomposed and reported in every account record (`scoring_breakdown`).
 
 
 ### Stage 8: Evidence Generation & Contract Formatting (`ml/inference.py`)
 - Auditable explanation generation strictly grounded in observed metrics and detected patterns.
 - Fully formatted JSON object ready for Member 1 ingestion.
+
+### Stage 9: AI Investigator (`ml/investigator.py`, `backend/src/investigator.js`)
+- Every account gets a case briefing: typology (for example "Money-mule collection hub"), summary, key findings with concrete numbers, MFS-specific next steps (NID/device/SIM linkage, agent cash-out records, STR to BFIU for critical cases), and linked accounts to open in Follow the Money.
+- The briefing is deterministic and built only from computed metrics, so the demo works offline.
+- Optionally, the backend asks Claude (`claude-opus-5-5`, structured JSON output) to rewrite the briefing as an analyst narrative, grounded in the same facts. Without `ANTHROPIC_API_KEY`, or on any API error or refusal, the rule-based briefing is used.
 
 ---
 
@@ -117,6 +125,7 @@ $$\text{Risk Score} = 0.40 \times \text{ML Anomaly Score} + 0.40 \times \text{Gr
 | **Isolation Forest Anomaly Model** | Member 3 | Complete (`ml/model.py`) |
 | **Explainable Composite Scoring** | Member 2 & 3 | Complete (`ml/model.py`) |
 | **Evidence / Explanation Generation** | Member 3 | Complete (`ml/inference.py`) |
+| **AI Investigator Briefing** | Member 3 | Complete (`ml/investigator.py`, `backend/src/investigator.js`) |
 | **Unit & Security Test Suites** | Member 3 | Complete (`tests/`) |
 | **API Contract Specification** | Member 2 & 3 | Complete (`docs/api-contract.md`) |
 | **Backend Web Server / REST API** | Member 1 | Scope of Member 1 |

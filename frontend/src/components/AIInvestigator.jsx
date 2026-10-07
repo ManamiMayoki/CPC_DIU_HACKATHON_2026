@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
-import { 
-  Sparkles, 
-  ShieldAlert, 
-  FileCheck, 
-  Download, 
-  Copy, 
-  Check, 
-  AlertCircle, 
-  ExternalLink,
+import { useState } from 'react';
+import {
+  Sparkles,
+  FileCheck,
+  Copy,
+  Check,
+  AlertCircle,
   ChevronRight,
-  TrendingDown
+  ListChecks,
+  Loader2,
+  Link2,
+  Info
 } from 'lucide-react';
+import { fetchInvestigation } from '../services/api';
 
 export default function AIInvestigator({ selectedAccount, accounts = [], onSelectAccount }) {
   const [copied, setCopied] = useState(false);
+  // Claude narratives fetched this session, keyed by account id
+  const [narratives, setNarratives] = useState({});
+  const [loadingId, setLoadingId] = useState(null);
 
   // If no account is explicitly selected, pick the highest risk one
   const target = selectedAccount || accounts[0];
@@ -35,38 +39,67 @@ export default function AIInvestigator({ selectedAccount, accounts = [], onSelec
   const score = target.risk_score || 0;
   const level = target.risk_level || 'LOW';
 
-  // Construct grounded investigator recommendation based strictly on data
-  const getRecommendation = () => {
+  // Fallback for data produced before briefings existed: tier-based guidance only
+  const getTierRecommendation = () => {
     if (level === 'CRITICAL' || level === 'HIGH') {
-      return 'Immediate Case Escalation Recommended: Cross-reference recipient account ownership, hold outbound clearing on rapid passthrough routes, and request originator KYC documentation for coordinated cycle participation.';
+      return 'Escalate for priority review: verify the KYC of linked wallets and review the detected patterns before deciding on a hold or an STR.';
     }
     if (level === 'MEDIUM') {
-      return 'Enhanced Due Diligence (EDD): Monitor 24-hour transaction velocity, verify business legitimacy of incoming peer funds, and flag further cycle layering attempts.';
+      return 'Enhanced due diligence: monitor the account and review again if similar activity repeats.';
     }
-    return 'Routine Monitoring: Behavior conforms within standard statistical thresholds. Maintain baseline anomaly surveillance.';
+    return 'Routine monitoring: no network pattern needs action.';
   };
 
-  const recommendation = getRecommendation();
+  const fetched = narratives[target.account_id];
+  const briefing = fetched?.investigation || target.investigation || null;
+  const source = briefing?.generated_by === 'claude' ? 'claude' : 'rule-based';
+  const findings = briefing?.key_findings?.length ? briefing.key_findings : evidence;
+  const nextSteps = briefing?.next_steps?.length ? briefing.next_steps : [getTierRecommendation()];
+  const related = briefing?.related_accounts || [];
+  const knownIds = new Set(accounts.map((a) => a.account_id));
+  const isLoading = loadingId === target.account_id;
+
+  const handleGenerateNarrative = async () => {
+    const accountId = target.account_id;
+    setLoadingId(accountId);
+    const res = await fetchInvestigation(accountId);
+    setNarratives((prev) => ({
+      ...prev,
+      [accountId]: res.success
+        ? { investigation: res.investigation, note: res.note }
+        : { investigation: null, note: res.error },
+    }));
+    setLoadingId(null);
+  };
 
   // Export or copy case report
   const handleCopyReport = () => {
-    const reportText = `FLOWGUARD AI - TRANSACTION INTELLIGENCE CASE FILE
+    const reportText = `CYGNUS AI - TRANSACTION INTELLIGENCE CASE FILE
 Generated: ${new Date().toISOString()}
 Target Account: ${target.account_id}
 Composite Risk Score: ${score.toFixed(1)} / 100 (${level} RISK)
+Typology: ${briefing?.typology || 'Not assessed'}
 Anomaly Classification: ${target.is_anomaly ? 'Isolation Forest Outlier' : 'Statistical Inlier'}
 Detected Patterns: ${patterns.join(', ') || 'None'}
+Briefing Source: ${source === 'claude' ? 'Claude narrative grounded in pipeline evidence' : 'Rule-based, built from pipeline evidence'}
 
-GROUNDED AUDIT EVIDENCE:
-${evidence.map(e => `• ${e}`).join('\n')}
+SUMMARY:
+${briefing?.summary || 'No briefing available.'}
 
-INVESTIGATOR RECOMMENDATION:
-${recommendation}
+KEY FINDINGS:
+${findings.map(e => `- ${e}`).join('\n')}
+
+RECOMMENDED NEXT STEPS:
+${nextSteps.map((e, i) => `${i + 1}. ${e}`).join('\n')}
+
+LINKED ACCOUNTS: ${related.join(', ') || 'None'}
 
 DECOMPOSED METRICS:
-- ML Anomaly Score: ${target.scoring_breakdown?.ml_component || 'N/A'}
-- Graph Pattern Score: ${target.scoring_breakdown?.graph_component || 'N/A'}
-- Behavioral Score: ${target.scoring_breakdown?.behavioral_component || 'N/A'}
+- ML Anomaly Score: ${target.scoring_breakdown?.ml_component ?? 'N/A'}
+- Graph Pattern Score: ${target.scoring_breakdown?.graph_component ?? 'N/A'}
+- Behavioral Score: ${target.scoring_breakdown?.behavioral_component ?? 'N/A'}
+
+NOTE: ${briefing?.caveat || 'Risk indicators for prioritisation, not proof of wrongdoing.'}
 `;
     navigator.clipboard.writeText(reportText);
     setCopied(true);
@@ -91,18 +124,27 @@ DECOMPOSED METRICS:
             marginBottom: '6px'
           }}>
             <Sparkles size={14} color="#B8FF3D" />
-            <span>MEMBER 3 EVIDENCE INFERENCE ENGINE</span>
+            <span>EVIDENCE-GROUNDED CASE BRIEFING</span>
           </div>
           <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
             AI Forensic Investigator
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '4px' }}>
-            Explainable AI diagnostic statements generated from topological cycles, velocity spikes, and Isolation Forest outliers.
+            Every finding and next step below is built from this account's detected patterns, transaction metrics and Isolation Forest score.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleGenerateNarrative}
+            disabled={isLoading}
+            className="btn-primary"
+            style={{ padding: '10px 20px', fontSize: '0.86rem', opacity: isLoading ? 0.7 : 1 }}
+          >
+            {isLoading ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />}
+            <span>{isLoading ? 'Writing narrative...' : 'Generate AI Narrative'}</span>
+          </button>
           <button onClick={handleCopyReport} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '0.86rem' }}>
             {copied ? <Check size={16} color="#22C55E" /> : <Copy size={16} />}
             <span>{copied ? 'Case File Copied!' : 'Copy Case Report'}</span>
@@ -161,14 +203,57 @@ DECOMPOSED METRICS:
               <AlertCircle size={18} color="#EF4444" />
             </div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>
-              Why is this network suspicious?
+              {briefing?.typology && briefing.typology !== 'No suspicious typology'
+                ? briefing.typology
+                : 'Why is this account flagged?'}
             </h3>
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '0.68rem',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '999px',
+              color: source === 'claude' ? '#C4B5FD' : 'var(--primary-neon)',
+              border: `1px solid ${source === 'claude' ? 'rgba(139, 92, 246, 0.5)' : 'rgba(184, 255, 61, 0.4)'}`,
+              whiteSpace: 'nowrap'
+            }}>
+              {source === 'claude' ? 'CLAUDE NARRATIVE' : 'RULE-BASED BRIEFING'}
+            </span>
+          </div>
+
+          {briefing?.summary && (
+            <p style={{ fontSize: '0.95rem', color: '#E2E8F0', lineHeight: 1.6, marginBottom: '20px' }}>
+              {briefing.summary}
+            </p>
+          )}
+
+          {fetched?.note && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              fontSize: '0.8rem',
+              color: 'var(--text-secondary)',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+              padding: '10px 12px',
+              marginBottom: '20px'
+            }}>
+              <Info size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{fetched.note}</span>
+            </div>
+          )}
+
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: '10px' }}>
+            KEY FINDINGS
           </div>
 
           {/* Auditable Grounded Evidence List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
-            {evidence.length > 0 ? (
-              evidence.map((item, idx) => (
+            {findings.length > 0 ? (
+              findings.map((item, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -202,7 +287,7 @@ DECOMPOSED METRICS:
             )}
           </div>
 
-          {/* Investigator Recommendation Card */}
+          {/* Recommended Next Steps */}
           <div style={{
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(99, 102, 241, 0.08))',
             borderRadius: '16px',
@@ -210,15 +295,53 @@ DECOMPOSED METRICS:
             border: '1px solid rgba(139, 92, 246, 0.35)',
             boxShadow: '0 0 25px rgba(139, 92, 246, 0.1)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <FileCheck size={18} color="#8B5CF6" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <ListChecks size={18} color="#8B5CF6" />
               <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.02em' }}>
-                Investigator Recommendation
+                Recommended Next Steps
               </h4>
             </div>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.6 }}>
-              {recommendation}
-            </p>
+            <ol style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {nextSteps.map((step, idx) => (
+                <li key={idx} style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.55 }}>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {related.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: '10px' }}>
+                <Link2 size={13} />
+                <span>LINKED ACCOUNTS</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {related.map((accId) => (
+                  <button
+                    key={accId}
+                    onClick={() => knownIds.has(accId) && onSelectAccount && onSelectAccount(accId)}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#E2E8F0',
+                      cursor: knownIds.has(accId) ? 'pointer' : 'default'
+                    }}
+                  >
+                    {accId}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '20px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            <FileCheck size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+            <span>{briefing?.caveat || 'Risk indicators for prioritisation, not proof of wrongdoing.'}</span>
           </div>
         </div>
 

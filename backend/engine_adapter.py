@@ -1,4 +1,4 @@
-"""FlowGuard AI - Member 1 Integration Engine Adapter.
+"""Cygnus AI - Member 1 Integration Engine Adapter.
 
 Integrates with Member 2 (GraphEngine) and Member 3 (ML Anomaly & Risk Inference)
 without modifying any core algorithms or validation rules.
@@ -14,6 +14,8 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Union
 
+import networkx as nx
+
 # Set up system paths to import ml and graph-engine
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
@@ -26,6 +28,7 @@ for path in (PROJECT_ROOT, GRAPH_DIR, ML_DIR):
         sys.path.insert(0, path)
 
 from ml.inference import run_pipeline
+from ml.validation import validate_transactions
 from graph import build_transaction_graph, get_graph_summary
 from data.synthetic.generator import SyntheticDataGenerator
 
@@ -99,7 +102,7 @@ def get_demo_scenarios_metadata() -> List[Dict[str, Any]]:
         {
             "id": "CIRCULAR_FLOW",
             "name": "Circular Layering Loop",
-            "target_account": "ACC_CYCLE_A",
+            "target_account": "ACC_CYCLE_B",
             "expected_pattern": "circular_flow",
             "severity": "HIGH",
             "badge_color": "rose",
@@ -116,6 +119,26 @@ def get_demo_scenarios_metadata() -> List[Dict[str, Any]]:
             "description": "Dense interconnected group of accounts transacting heavily among themselves.",
             "benchmark_note": "Strongly connected component with high internal density."
         },
+        {
+            "id": "STRUCTURING",
+            "name": "Structured Transfers",
+            "target_account": "ACC_STRUCT_SRC",
+            "expected_pattern": "structuring",
+            "severity": "MEDIUM",
+            "badge_color": "amber",
+            "description": "Five transfers of 9,400-9,950 within a few hours, each kept just under the 10,000 threshold.",
+            "benchmark_note": "3+ near-threshold transfers inside 24 hours flag both splitter and collector."
+        },
+        {
+            "id": "MULE_RING",
+            "name": "Mule-Ring (MFS Money-Mule Network)",
+            "target_account": "ACC_MULE_HUB",
+            "expected_pattern": "structuring",
+            "severity": "CRITICAL",
+            "badge_color": "red",
+            "description": "8 feeder wallets -> collector hub -> 4 mule wallets -> cash-out agent -> back to the hub, all within about two hours.",
+            "benchmark_note": "Fan-in, structuring, rapid movement, chain and a time-ordered loop combine into a CRITICAL score."
+        },
     ]
 
 
@@ -128,6 +151,7 @@ def build_enhanced_payload(
     account_map = {acc["account_id"]: acc for acc in accounts_list}
 
     # Build NetworkX graph for edge aggregation & topology
+    # (callers pass the validated transactions, so rejected records never reach the UI graph)
     graph = build_transaction_graph(transactions, multi_graph=False)
     summary = get_graph_summary(graph)
 
@@ -167,6 +191,7 @@ def build_enhanced_payload(
             "net_flow": round(in_weight - out_weight, 2),
             "transaction_count": tx_count,
             "evidence": acc_info.get("evidence", []),
+            "investigation": acc_info.get("investigation"),
             "scoring_breakdown": acc_info.get("scoring_breakdown", {
                 "ml_component": 20.0,
                 "graph_component": 15.0,
@@ -190,7 +215,7 @@ def build_enhanced_payload(
         # Check if edge connects suspicious accounts or is part of a flagged pattern
         u_patterns = account_patterns_map.get(u, [])
         v_patterns = account_patterns_map.get(v, [])
-        shared_patterns = list(set(u_patterns) & set(v_patterns))
+        shared_patterns = sorted(set(u_patterns) & set(v_patterns))
         
         u_tier = account_tier_map.get(u, "LOW")
         v_tier = account_tier_map.get(v, "LOW")
@@ -236,7 +261,7 @@ def build_enhanced_payload(
             "id": "rapid_movement",
             "name": "Rapid Movement",
             "title": "Rapid Passthrough",
-            "description": "Incoming funds immediately forwarded within minutes (passthrough ratio >= 70%).",
+            "description": "Incoming funds of 1,000+ forwarded onward within an hour, keeping 70-110% of the amount.",
             "severity": "CRITICAL",
             "badge_color": "rose",
         },
@@ -252,9 +277,17 @@ def build_enhanced_payload(
             "id": "circular_flow",
             "name": "Circular Flow",
             "title": "Circular Loop",
-            "description": "Closed directed cycles (A -> B -> C -> A) creating artificial transaction volume or laundering loops.",
+            "description": "Money that travels a closed loop (A -> B -> C -> A) in time order within 6 hours and returns to its origin.",
             "severity": "CRITICAL",
             "badge_color": "red",
+        },
+        {
+            "id": "structuring",
+            "name": "Structuring",
+            "title": "Structured Transfers",
+            "description": "Several transactions kept just under the 10,000 threshold within 24 hours to avoid monitoring.",
+            "severity": "HIGH",
+            "badge_color": "amber",
         },
         {
             "id": "coordinated_network",
@@ -289,7 +322,9 @@ def build_enhanced_payload(
     high_risk_accs = sum(1 for a in accounts_list if a.get("risk_level") in ("HIGH", "CRITICAL"))
     med_risk_accs = sum(1 for a in accounts_list if a.get("risk_level") == "MEDIUM")
     avg_risk = round(sum(a.get("risk_score", 0.0) for a in accounts_list) / max(1, len(accounts_list)), 1)
-    suspicious_networks_count = summary.get("strongly_connected_components", 0) + sum(
+    # Every account outside a cycle is its own single-node SCC, so only multi-account SCCs count here
+    multi_account_sccs = sum(1 for comp in nx.strongly_connected_components(graph) if len(comp) > 1)
+    suspicious_networks_count = multi_account_sccs + sum(
         1 for p in patterns_summary if p["detected"]
     )
 
@@ -340,6 +375,7 @@ def build_enhanced_payload(
             "is_anomaly": a["is_anomaly"],
             "patterns": a.get("patterns", []),
             "evidence": a.get("evidence", []),
+            "investigation": a.get("investigation"),
             "transactions_count": a.get("ml_features", {}).get("transaction_count", 0),
             "incoming": a.get("ml_features", {}).get("total_incoming", 0.0),
             "outgoing": a.get("ml_features", {}).get("total_outgoing", 0.0),
@@ -347,6 +383,12 @@ def build_enhanced_payload(
         }
         for a in accounts_list[:15]
     ]
+
+    # Show each demo scenario's badge at the tier the pipeline actually assigned its target account
+    demo_scenarios = []
+    for scenario in get_demo_scenarios_metadata():
+        target_tier = account_tier_map.get(scenario["target_account"])
+        demo_scenarios.append({**scenario, "severity": target_tier or scenario["severity"]})
 
     return {
         "status": "SUCCESS",
@@ -361,7 +403,7 @@ def build_enhanced_payload(
         "top_risk_accounts": top_risk_accounts,
         "patterns_summary": patterns_summary,
         "risk_distribution": risk_distribution,
-        "demo_scenarios": get_demo_scenarios_metadata(),
+        "demo_scenarios": demo_scenarios,
         "analytics": {
             "volume_timeline": volume_timeline,
             "risk_distribution": risk_distribution,
@@ -384,7 +426,8 @@ def analyze_dataset(transactions: Optional[List[Dict[str, Any]]] = None) -> Dict
         strict_validation=False,
     )
 
-    return build_enhanced_payload(transactions, pipeline_result)
+    valid_transactions = validate_transactions(transactions, strict=False).valid_transactions
+    return build_enhanced_payload(valid_transactions, pipeline_result)
 
 
 def get_account_subgraph(
@@ -451,6 +494,7 @@ def get_account_subgraph(
         "node_count": len(subgraph_nodes),
         "edge_count": len(subgraph_edges),
         "evidence": target_evidence,
+        "investigation": target_node.get("investigation"),
         "scoring_breakdown": target_breakdown,
         "patterns": target_node.get("patterns", []),
         "risk_score": target_node.get("risk_score", 0.0),
@@ -459,26 +503,32 @@ def get_account_subgraph(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="FlowGuard AI Integration Adapter")
+    parser = argparse.ArgumentParser(description="Cygnus AI Integration Adapter")
     parser.add_argument("--action", choices=["analyze", "account", "scenarios", "summary"], default="analyze")
     parser.add_argument("--account", type=str, help="Target account ID")
     parser.add_argument("--hops", type=int, default=1, help="Ego network hops")
     parser.add_argument("--out", type=str, help="Output JSON path")
+    parser.add_argument("--input", type=str, help="Transactions JSON file to analyze (defaults to the synthetic sample)")
     args = parser.parse_args()
+
+    transactions = None
+    if args.input:
+        with open(args.input, "r", encoding="utf-8") as f:
+            transactions = json.load(f)
 
     if args.action == "scenarios":
         output = {"scenarios": get_demo_scenarios_metadata()}
     elif args.action == "account" and args.account:
-        output = get_account_subgraph(args.account, hops=args.hops)
+        output = get_account_subgraph(args.account, transactions=transactions, hops=args.hops)
     elif args.action == "summary":
-        full = analyze_dataset()
+        full = analyze_dataset(transactions)
         output = {
             "stats": full["stats"],
             "risk_distribution": full["risk_distribution"],
             "patterns_summary": full["patterns_summary"],
         }
     else:
-        output = analyze_dataset()
+        output = analyze_dataset(transactions)
 
     json_str = json.dumps(output, indent=2)
     if args.out:

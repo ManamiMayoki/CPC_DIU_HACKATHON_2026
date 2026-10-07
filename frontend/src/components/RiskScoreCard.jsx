@@ -1,5 +1,4 @@
-import React from 'react';
-import { Shield, AlertTriangle, Cpu, Network, Activity } from 'lucide-react';
+import { Cpu, Network, Activity } from 'lucide-react';
 
 export default function RiskScoreCard({ account }) {
   if (!account) return null;

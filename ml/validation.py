@@ -45,6 +45,9 @@ def parse_iso_timestamp(timestamp_val: Any) -> Optional[datetime.datetime]:
     if timestamp_val is None:
         return None
 
+    if isinstance(timestamp_val, bool):
+        return None
+
     if isinstance(timestamp_val, (int, float)):
         if math.isnan(timestamp_val) or math.isinf(timestamp_val):
             return None
@@ -64,7 +67,11 @@ def parse_iso_timestamp(timestamp_val: Any) -> Optional[datetime.datetime]:
         if cleaned.endswith("Z"):
             cleaned = cleaned[:-1] + "+00:00"
         try:
-            return datetime.datetime.fromisoformat(cleaned)
+            parsed = datetime.datetime.fromisoformat(cleaned)
+            # Treat timezone-less timestamps as UTC so naive and aware values can be compared
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+            return parsed
         except ValueError:
             # Fallback for standard space-separated format
             for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
@@ -75,6 +82,8 @@ def parse_iso_timestamp(timestamp_val: Any) -> Optional[datetime.datetime]:
             return None
 
     if isinstance(timestamp_val, datetime.datetime):
+        if timestamp_val.tzinfo is None:
+            return timestamp_val.replace(tzinfo=datetime.timezone.utc)
         return timestamp_val
 
     return None
@@ -133,6 +142,8 @@ def validate_single_transaction(
             amount_val = float(amount)
         except ValueError:
             return False, f"Invalid amount format: cannot parse '{amount}' as numeric", None
+    elif isinstance(amount, bool):
+        return False, "Invalid amount type: bool", None
     elif isinstance(amount, (int, float)):
         amount_val = float(amount)
     else:

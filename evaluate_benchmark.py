@@ -1,7 +1,7 @@
 """Synthetic Benchmark & Evaluation Runner.
 
 Executes controlled topological benchmark scenarios (NORMAL, FAN_IN, FAN_OUT,
-RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK) and prints an explainable,
+RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING) and prints an explainable,
 data-grounded evaluation summary table for hackathon presentation and validation.
 
 DISCLAIMER: This evaluation benchmarks unsupervised pattern detection on controlled
@@ -31,19 +31,19 @@ MAX_NORMAL_HIGH_RISK_PCT: float = 15.0  # Max allowable percentage of HIGH+CRITI
 
 
 def evaluate_benchmarks() -> bool:
-    """Executes the complete synthetic scenario benchmark suite across all 7 scenarios.
+    """Executes the complete synthetic scenario benchmark suite across all 9 scenarios.
 
     Returns:
         True if all benchmark criteria pass, False otherwise.
     """
     generator = SyntheticDataGenerator(seed=42)
     print("=" * 110)
-    print("FLOWGUARD AI: SYNTHETIC TOPOLOGY BENCHMARK & RISK SCORING EVALUATION")
+    print("CYGNUS AI: SYNTHETIC TOPOLOGY BENCHMARK & RISK SCORING EVALUATION")
     print("=" * 110)
     print("Evaluating unsupervised graph algorithms and explainable ML risk scoring on synthetic topologies.")
     print(f"Parameters: seed=42, random_state=42, contamination=0.10, max_normal_fp_pct={MAX_NORMAL_HIGH_RISK_PCT}%\n")
 
-    # Define all 7 controlled synthetic scenarios (including NORMAL)
+    # Define all 9 controlled synthetic scenarios (including NORMAL)
     scenarios: List[Dict[str, Any]] = [
         {
             "name": "1. NORMAL",
@@ -106,6 +106,24 @@ def evaluate_benchmarks() -> bool:
             "is_normal": False,
             "expected_pattern": "coordinated_network",
             "target_key": "ACC_COORD_00",
+        },
+        {
+            "name": "8. STRUCTURING",
+            "desc": "5 transfers just under the 10,000 threshold (ACC_STRUCT_SRC -> ACC_STRUCT_DST)",
+            "txs": generator.generate_normal_transactions(num_accounts=10, num_transactions=20)
+                   + generator.generate_structuring_scenario(),
+            "is_normal": False,
+            "expected_pattern": "structuring",
+            "target_key": "ACC_STRUCT_SRC",
+        },
+        {
+            "name": "9. MULE_RING",
+            "desc": "Feeders -> hub -> mules -> cash-out agent -> hub (combined typologies)",
+            "txs": generator.generate_normal_transactions(num_accounts=10, num_transactions=20)
+                   + generator.generate_mule_ring_scenario(),
+            "is_normal": False,
+            "expected_pattern": "structuring",
+            "target_key": "ACC_MULE_HUB",
         },
     ]
 

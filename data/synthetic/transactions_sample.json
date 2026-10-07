@@ -231,7 +231,7 @@
     "timestamp": "2026-03-01T13:05:36Z"
   },
   {
-    "transaction_id": "TX_000137",
+    "transaction_id": "TX_000141",
     "sender_id": "ACC_CHAIN_00",
     "receiver_id": "ACC_CHAIN_01",
     "amount": 7680.0,
@@ -245,21 +245,35 @@
     "timestamp": "2026-03-01T13:18:43Z"
   },
   {
-    "transaction_id": "TX_000138",
+    "transaction_id": "TX_000142",
     "sender_id": "ACC_CHAIN_01",
     "receiver_id": "ACC_CHAIN_02",
     "amount": 7372.8,
     "timestamp": "2026-03-01T13:20:00Z"
   },
   {
-    "transaction_id": "TX_000139",
+    "transaction_id": "TX_000137",
+    "sender_id": "ACC_RAPID_IN",
+    "receiver_id": "ACC_RAPID_MID",
+    "amount": 8000.0,
+    "timestamp": "2026-03-01T13:30:00Z"
+  },
+  {
+    "transaction_id": "TX_000143",
     "sender_id": "ACC_CHAIN_02",
     "receiver_id": "ACC_CHAIN_03",
     "amount": 7077.89,
     "timestamp": "2026-03-01T13:30:00Z"
   },
   {
-    "transaction_id": "TX_000140",
+    "transaction_id": "TX_000138",
+    "sender_id": "ACC_RAPID_MID",
+    "receiver_id": "ACC_RAPID_OUT",
+    "amount": 7600.0,
+    "timestamp": "2026-03-01T13:34:00Z"
+  },
+  {
+    "transaction_id": "TX_000144",
     "sender_id": "ACC_CHAIN_03",
     "receiver_id": "ACC_CHAIN_04",
     "amount": 6794.77,
@@ -287,7 +301,7 @@
     "timestamp": "2026-03-01T14:06:38Z"
   },
   {
-    "transaction_id": "TX_000141",
+    "transaction_id": "TX_000145",
     "sender_id": "ACC_CYCLE_A",
     "receiver_id": "ACC_CYCLE_B",
     "amount": 3500.0,
@@ -301,7 +315,7 @@
     "timestamp": "2026-03-01T14:29:28Z"
   },
   {
-    "transaction_id": "TX_000142",
+    "transaction_id": "TX_000146",
     "sender_id": "ACC_CYCLE_B",
     "receiver_id": "ACC_CYCLE_C",
     "amount": 3450.0,
@@ -322,7 +336,7 @@
     "timestamp": "2026-03-01T14:43:37Z"
   },
   {
-    "transaction_id": "TX_000143",
+    "transaction_id": "TX_000147",
     "sender_id": "ACC_CYCLE_C",
     "receiver_id": "ACC_CYCLE_A",
     "amount": 3400.0,
@@ -336,7 +350,21 @@
     "timestamp": "2026-03-01T14:51:49Z"
   },
   {
-    "transaction_id": "TX_000144",
+    "transaction_id": "TX_000139",
+    "sender_id": "ACC_RAPID_IN",
+    "receiver_id": "ACC_RAPID_MID",
+    "amount": 6500.0,
+    "timestamp": "2026-03-01T15:00:00Z"
+  },
+  {
+    "transaction_id": "TX_000140",
+    "sender_id": "ACC_RAPID_MID",
+    "receiver_id": "ACC_RAPID_OUT",
+    "amount": 6175.0,
+    "timestamp": "2026-03-01T15:03:00Z"
+  },
+  {
+    "transaction_id": "TX_000148",
     "sender_id": "ACC_COORD_00",
     "receiver_id": "ACC_COORD_01",
     "amount": 2040.9,
@@ -350,7 +378,7 @@
     "timestamp": "2026-03-01T15:15:11Z"
   },
   {
-    "transaction_id": "TX_000145",
+    "transaction_id": "TX_000149",
     "sender_id": "ACC_COORD_00",
     "receiver_id": "ACC_COORD_02",
     "amount": 2113.31,
@@ -364,7 +392,7 @@
     "timestamp": "2026-03-01T15:38:07Z"
   },
   {
-    "transaction_id": "TX_000146",
+    "transaction_id": "TX_000150",
     "sender_id": "ACC_COORD_00",
     "receiver_id": "ACC_COORD_03",
     "amount": 1737.15,
@@ -378,18 +406,60 @@
     "timestamp": "2026-03-01T15:47:32Z"
   },
   {
-    "transaction_id": "TX_000147",
+    "transaction_id": "TX_000151",
     "sender_id": "ACC_COORD_00",
     "receiver_id": "ACC_COORD_04",
     "amount": 3727.86,
     "timestamp": "2026-03-01T15:51:00Z"
   },
   {
-    "transaction_id": "TX_000148",
+    "transaction_id": "TX_000166",
+    "sender_id": "ACC_MULE_SRC_000",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9573.88,
+    "timestamp": "2026-03-01T16:02:00Z"
+  },
+  {
+    "transaction_id": "TX_000152",
     "sender_id": "ACC_COORD_01",
     "receiver_id": "ACC_COORD_00",
     "amount": 3534.43,
     "timestamp": "2026-03-01T16:03:00Z"
+  },
+  {
+    "transaction_id": "TX_000167",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_01",
+    "amount": 9421.1,
+    "timestamp": "2026-03-01T16:05:00Z"
+  },
+  {
+    "transaction_id": "TX_000168",
+    "sender_id": "ACC_MULE_SRC_001",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9870.02,
+    "timestamp": "2026-03-01T16:06:00Z"
+  },
+  {
+    "transaction_id": "TX_000169",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_02",
+    "amount": 9739.17,
+    "timestamp": "2026-03-01T16:09:00Z"
+  },
+  {
+    "transaction_id": "TX_000170",
+    "sender_id": "ACC_MULE_SRC_002",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9798.34,
+    "timestamp": "2026-03-01T16:11:00Z"
+  },
+  {
+    "transaction_id": "TX_000171",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_03",
+    "amount": 9567.45,
+    "timestamp": "2026-03-01T16:12:00Z"
   },
   {
     "transaction_id": "TX_000029",
@@ -399,18 +469,74 @@
     "timestamp": "2026-03-01T16:14:01Z"
   },
   {
-    "transaction_id": "TX_000149",
+    "transaction_id": "TX_000153",
     "sender_id": "ACC_COORD_01",
     "receiver_id": "ACC_COORD_03",
     "amount": 2823.96,
     "timestamp": "2026-03-01T16:16:00Z"
   },
   {
-    "transaction_id": "TX_000150",
+    "transaction_id": "TX_000172",
+    "sender_id": "ACC_MULE_SRC_003",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9570.04,
+    "timestamp": "2026-03-01T16:16:00Z"
+  },
+  {
+    "transaction_id": "TX_000173",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_04",
+    "amount": 9403.08,
+    "timestamp": "2026-03-01T16:19:00Z"
+  },
+  {
+    "transaction_id": "TX_000174",
+    "sender_id": "ACC_MULE_SRC_004",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9759.49,
+    "timestamp": "2026-03-01T16:20:00Z"
+  },
+  {
+    "transaction_id": "TX_000175",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_01",
+    "amount": 9521.74,
+    "timestamp": "2026-03-01T16:23:00Z"
+  },
+  {
+    "transaction_id": "TX_000176",
+    "sender_id": "ACC_MULE_SRC_005",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9464.76,
+    "timestamp": "2026-03-01T16:23:00Z"
+  },
+  {
+    "transaction_id": "TX_000154",
     "sender_id": "ACC_COORD_01",
     "receiver_id": "ACC_COORD_04",
     "amount": 2438.05,
     "timestamp": "2026-03-01T16:25:00Z"
+  },
+  {
+    "transaction_id": "TX_000177",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_02",
+    "amount": 9108.17,
+    "timestamp": "2026-03-01T16:25:00Z"
+  },
+  {
+    "transaction_id": "TX_000178",
+    "sender_id": "ACC_MULE_SRC_006",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9463.03,
+    "timestamp": "2026-03-01T16:26:00Z"
+  },
+  {
+    "transaction_id": "TX_000180",
+    "sender_id": "ACC_MULE_SRC_007",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 9383.02,
+    "timestamp": "2026-03-01T16:28:00Z"
   },
   {
     "transaction_id": "TX_000030",
@@ -420,7 +546,21 @@
     "timestamp": "2026-03-01T16:28:38Z"
   },
   {
-    "transaction_id": "TX_000151",
+    "transaction_id": "TX_000179",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_03",
+    "amount": 9175.27,
+    "timestamp": "2026-03-01T16:29:00Z"
+  },
+  {
+    "transaction_id": "TX_000181",
+    "sender_id": "ACC_MULE_HUB",
+    "receiver_id": "ACC_MULE_04",
+    "amount": 9072.8,
+    "timestamp": "2026-03-01T16:31:00Z"
+  },
+  {
+    "transaction_id": "TX_000155",
     "sender_id": "ACC_COORD_02",
     "receiver_id": "ACC_COORD_00",
     "amount": 3422.46,
@@ -434,6 +574,13 @@
     "timestamp": "2026-03-01T16:34:21Z"
   },
   {
+    "transaction_id": "TX_000182",
+    "sender_id": "ACC_MULE_01",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 9149.7,
+    "timestamp": "2026-03-01T16:36:00Z"
+  },
+  {
     "transaction_id": "TX_000032",
     "sender_id": "ACC_NORM_017",
     "receiver_id": "ACC_NORM_016",
@@ -441,21 +588,63 @@
     "timestamp": "2026-03-01T16:36:57Z"
   },
   {
-    "transaction_id": "TX_000152",
+    "transaction_id": "TX_000183",
+    "sender_id": "ACC_MULE_01",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 9164.16,
+    "timestamp": "2026-03-01T16:38:00Z"
+  },
+  {
+    "transaction_id": "TX_000184",
+    "sender_id": "ACC_MULE_02",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 9410.75,
+    "timestamp": "2026-03-01T16:42:00Z"
+  },
+  {
+    "transaction_id": "TX_000156",
     "sender_id": "ACC_COORD_02",
     "receiver_id": "ACC_COORD_01",
     "amount": 1994.6,
     "timestamp": "2026-03-01T16:46:00Z"
   },
   {
-    "transaction_id": "TX_000153",
+    "transaction_id": "TX_000185",
+    "sender_id": "ACC_MULE_02",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 8669.77,
+    "timestamp": "2026-03-01T16:47:00Z"
+  },
+  {
+    "transaction_id": "TX_000186",
+    "sender_id": "ACC_MULE_03",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 9200.87,
+    "timestamp": "2026-03-01T16:52:00Z"
+  },
+  {
+    "transaction_id": "TX_000157",
     "sender_id": "ACC_COORD_02",
     "receiver_id": "ACC_COORD_04",
     "amount": 1857.63,
     "timestamp": "2026-03-01T16:58:00Z"
   },
   {
-    "transaction_id": "TX_000154",
+    "transaction_id": "TX_000187",
+    "sender_id": "ACC_MULE_03",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 8976.92,
+    "timestamp": "2026-03-01T16:58:00Z"
+  },
+  {
+    "transaction_id": "TX_000188",
+    "sender_id": "ACC_MULE_04",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 9174.6,
+    "timestamp": "2026-03-01T17:00:00Z"
+  },
+  {
+    "transaction_id": "TX_000158",
     "sender_id": "ACC_COORD_04",
     "receiver_id": "ACC_COORD_00",
     "amount": 3579.27,
@@ -469,7 +658,14 @@
     "timestamp": "2026-03-01T17:04:59Z"
   },
   {
-    "transaction_id": "TX_000155",
+    "transaction_id": "TX_000189",
+    "sender_id": "ACC_MULE_04",
+    "receiver_id": "ACC_MULE_CASHOUT",
+    "amount": 8722.69,
+    "timestamp": "2026-03-01T17:06:00Z"
+  },
+  {
+    "transaction_id": "TX_000159",
     "sender_id": "ACC_COORD_04",
     "receiver_id": "ACC_COORD_01",
     "amount": 3681.18,
@@ -483,7 +679,14 @@
     "timestamp": "2026-03-01T17:19:07Z"
   },
   {
-    "transaction_id": "TX_000156",
+    "transaction_id": "TX_000190",
+    "sender_id": "ACC_MULE_CASHOUT",
+    "receiver_id": "ACC_MULE_HUB",
+    "amount": 8478.99,
+    "timestamp": "2026-03-01T17:26:00Z"
+  },
+  {
+    "transaction_id": "TX_000160",
     "sender_id": "ACC_COORD_04",
     "receiver_id": "ACC_COORD_02",
     "amount": 2275.14,
@@ -532,6 +735,13 @@
     "timestamp": "2026-03-01T18:37:56Z"
   },
   {
+    "transaction_id": "TX_000161",
+    "sender_id": "ACC_STRUCT_SRC",
+    "receiver_id": "ACC_STRUCT_DST",
+    "amount": 9890.96,
+    "timestamp": "2026-03-01T18:40:00Z"
+  },
+  {
     "transaction_id": "TX_000041",
     "sender_id": "ACC_NORM_017",
     "receiver_id": "ACC_NORM_025",
@@ -544,6 +754,13 @@
     "receiver_id": "ACC_NORM_010",
     "amount": 422.42,
     "timestamp": "2026-03-01T19:00:52Z"
+  },
+  {
+    "transaction_id": "TX_000162",
+    "sender_id": "ACC_STRUCT_SRC",
+    "receiver_id": "ACC_STRUCT_DST",
+    "amount": 9828.13,
+    "timestamp": "2026-03-01T19:26:00Z"
   },
   {
     "transaction_id": "TX_000043",
@@ -572,6 +789,13 @@
     "receiver_id": "ACC_NORM_012",
     "amount": 440.57,
     "timestamp": "2026-03-01T20:18:01Z"
+  },
+  {
+    "transaction_id": "TX_000163",
+    "sender_id": "ACC_STRUCT_SRC",
+    "receiver_id": "ACC_STRUCT_DST",
+    "amount": 9496.74,
+    "timestamp": "2026-03-01T20:20:00Z"
   },
   {
     "transaction_id": "TX_000047",
@@ -609,6 +833,13 @@
     "timestamp": "2026-03-01T21:09:09Z"
   },
   {
+    "transaction_id": "TX_000164",
+    "sender_id": "ACC_STRUCT_SRC",
+    "receiver_id": "ACC_STRUCT_DST",
+    "amount": 9655.5,
+    "timestamp": "2026-03-01T21:33:00Z"
+  },
+  {
     "transaction_id": "TX_000052",
     "sender_id": "ACC_NORM_007",
     "receiver_id": "ACC_NORM_018",
@@ -642,6 +873,13 @@
     "receiver_id": "ACC_NORM_001",
     "amount": 298.27,
     "timestamp": "2026-03-01T22:28:17Z"
+  },
+  {
+    "transaction_id": "TX_000165",
+    "sender_id": "ACC_STRUCT_SRC",
+    "receiver_id": "ACC_STRUCT_DST",
+    "amount": 9537.06,
+    "timestamp": "2026-03-01T22:48:00Z"
   },
   {
     "transaction_id": "TX_000057",

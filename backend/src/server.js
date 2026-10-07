@@ -1,5 +1,5 @@
 /**
- * FlowGuard AI - Backend Integration Server
+ * Cygnus AI - Backend Integration Server
  * Member 1 Implementation
  * 
  * Bridges React frontend with Member 2 (GraphEngine) and Member 3 (ML Inference)
@@ -10,7 +10,9 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { spawn } = require('child_process');
+const { investigateAccount, clearInvestigationCache, hasCredentials } = require('./investigator');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,7 +21,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
 
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..');
 const ADAPTER_SCRIPT = path.join(PROJECT_ROOT, 'backend', 'engine_adapter.py');
 const INITIAL_STATE_PATH = path.join(PROJECT_ROOT, 'frontend', 'public', 'data', 'initial_state.json');
 
@@ -31,10 +33,10 @@ function loadInitialCache() {
     if (fs.existsSync(INITIAL_STATE_PATH)) {
       const raw = fs.readFileSync(INITIAL_STATE_PATH, 'utf-8');
       cachedData = JSON.parse(raw);
-      console.log(`[FlowGuard Backend] Loaded initial cache: ${cachedData.nodes?.length || 0} accounts, ${cachedData.stats?.total_transactions || 0} transactions.`);
+      console.log(`[Cygnus Backend] Loaded initial cache: ${cachedData.nodes?.length || 0} accounts, ${cachedData.stats?.total_transactions || 0} transactions.`);
     }
   } catch (err) {
-    console.error('[FlowGuard Backend] Error loading initial state file:', err.message);
+    console.error('[Cygnus Backend] Error loading initial state file:', err.message);
   }
 }
 
@@ -47,7 +49,7 @@ loadInitialCache();
 function runPythonAdapter(args = []) {
   return new Promise((resolve, reject) => {
     // Determine python command
-    const pyCmd = process.platform === 'win32' ? 'py' : 'python3';
+    const pyCmd = process.env.PYTHON_CMD || (process.platform === 'win32' ? 'py' : 'python3');
     const pyProcess = spawn(pyCmd, [ADAPTER_SCRIPT, ...args], {
       cwd: PROJECT_ROOT,
       env: { ...process.env },
@@ -93,9 +95,10 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     timestamp: new Date().toISOString(),
-    service: 'FlowGuard AI Detection Backend',
+    service: 'Cygnus AI Detection Backend',
     contract_version: '1.0.0',
-    verification: '42/42 tests passing',
+    verification: '50/50 tests passing',
+    ai_narrative: hasCredentials() ? 'claude' : 'rule-based',
     accounts_cached: cachedData?.nodes?.length || 0,
   });
 });
@@ -134,6 +137,7 @@ app.get('/api/pipeline', async (req, res) => {
  * Run Pipeline on custom or uploaded transactions
  */
 app.post('/api/pipeline/run', async (req, res) => {
+  let tempFile = null;
   try {
     const transactions = req.body?.transactions;
     if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
@@ -143,22 +147,23 @@ app.post('/api/pipeline/run', async (req, res) => {
       });
     }
 
-    // Save temporary transactions file for Python execution
-    const tempFile = path.join(PROJECT_ROOT, 'data', 'synthetic', 'temp_custom_tx.json');
-    fs.writeFileSync(tempFile, JSON.stringify(transactions, null, 2), 'utf-8');
+    // Save the uploaded transactions to a unique temp file and point the adapter at it
+    tempFile = path.join(os.tmpdir(), `cygnus_tx_${process.pid}_${Date.now()}.json`);
+    fs.writeFileSync(tempFile, JSON.stringify(transactions), 'utf-8');
 
-    // Run engine adapter on custom file
-    const data = await runPythonAdapter(['--action', 'analyze']);
-    cachedData = data;
-
-    // Clean up temp file
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (_) {}
+    const data = await runPythonAdapter(['--action', 'analyze', '--input', tempFile]);
+    if (data.pipeline_status !== 'SUCCESS') {
+      // Keep serving the current dataset rather than replacing it with an empty result
+      return res.status(400).json({ success: false, error: 'No valid transactions in upload', validation_summary: data.validation_summary });
     }
+    cachedData = data;
+    clearInvestigationCache();
 
     res.json(data);
   } catch (err) {
     res.status(500).json({ success: false, error: 'Pipeline execution failed', message: err.message });
+  } finally {
+    if (tempFile) fs.rm(tempFile, { force: true }, () => {});
   }
 });
 
@@ -216,6 +221,25 @@ app.get('/api/accounts/:id', (req, res) => {
   }
 
   res.json({ success: true, account });
+});
+
+/**
+ * AI Investigator: case briefing for one account. Claude writes the narrative when an
+ * API key is configured; otherwise the rule-based briefing from the pipeline is returned.
+ */
+app.get('/api/investigate/:id', async (req, res) => {
+  const accountId = req.params.id;
+  if (!cachedData || !cachedData.accounts) {
+    return res.status(503).json({ success: false, error: 'Data not available' });
+  }
+  const account = cachedData.accounts.find(
+    (a) => a.account_id.toLowerCase() === accountId.toLowerCase()
+  );
+  if (!account) {
+    return res.status(404).json({ success: false, error: `Account '${accountId}' not found.` });
+  }
+  const result = await investigateAccount(account, account.account_id);
+  res.json({ success: true, ...result });
 });
 
 /**
@@ -375,8 +399,10 @@ app.get('/api/demo/scenarios', (req, res) => {
       { id: 'FAN_OUT', name: 'Fan-Out Dispersion Hub', target_account: 'ACC_FANOUT_HUB' },
       { id: 'RAPID_MOVEMENT', name: 'Rapid Passthrough Movement', target_account: 'ACC_RAPID_MID' },
       { id: 'CHAIN', name: 'Multi-Hop Transaction Chain', target_account: 'ACC_CHAIN_02' },
-      { id: 'CIRCULAR_FLOW', name: 'Circular Layering Loop', target_account: 'ACC_CYCLE_A' },
+      { id: 'CIRCULAR_FLOW', name: 'Circular Layering Loop', target_account: 'ACC_CYCLE_B' },
       { id: 'COORDINATED_NETWORK', name: 'Coordinated Account Cluster', target_account: 'ACC_COORD_00' },
+      { id: 'STRUCTURING', name: 'Structured Transfers', target_account: 'ACC_STRUCT_SRC' },
+      { id: 'MULE_RING', name: 'Mule-Ring (MFS Money-Mule Network)', target_account: 'ACC_MULE_HUB' },
     ],
   });
 });
@@ -384,7 +410,7 @@ app.get('/api/demo/scenarios', (req, res) => {
 // Start Express Server
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`🚀 FLOWGUARD AI API BACKEND ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 CYGNUS AI API BACKEND ACTIVE ON PORT ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/api/health`);
   console.log(`   Stats:  http://localhost:${PORT}/api/stats`);
   console.log(`   Demo:   http://localhost:${PORT}/api/demo/scenarios`);

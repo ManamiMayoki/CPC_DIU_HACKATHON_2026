@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Shield, Zap, Search, Activity, Lock, Layers, AlertTriangle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ArrowRight, Shield, Zap, Activity, Lock, Layers } from 'lucide-react';
 
 export default function HeroSection({
   stats,
   nodes = [],
-  edges = [],
   onStartInvestigation,
   onExploreNetwork,
   onSelectAccount
 }) {
   const canvasRef = useRef(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
+
+  // Highest-risk account in the current dataset drives the "flagged" card
+  const topNode = nodes.reduce(
+    (best, n) => (!best || (n.risk_score ?? 0) > (best.risk_score ?? 0) ? n : best),
+    null
+  );
+  const topId = topNode?.id || 'ACC_MULE_HUB';
 
   // Animated Network Canvas on Hero background/foreground
   useEffect(() => {
@@ -21,15 +26,15 @@ export default function HeroSection({
 
     // Use actual nodes from project data or fallback sample
     const sampleNodes = nodes.length > 0 ? nodes.slice(0, 22) : [
-      { id: 'ACC_FANIN_HUB', risk_score: 59.95, risk_level: 'MEDIUM', patterns: ['fan_in'] },
-      { id: 'ACC_FANOUT_HUB', risk_score: 61.94, risk_level: 'MEDIUM', patterns: ['fan_out'] },
-      { id: 'ACC_RAPID_MID', risk_score: 48.17, risk_level: 'MEDIUM', patterns: ['rapid_movement'] },
-      { id: 'ACC_CYCLE_A', risk_score: 52.41, risk_level: 'MEDIUM', patterns: ['circular_flow'] },
-      { id: 'ACC_COORD_00', risk_score: 68.94, risk_level: 'MEDIUM', patterns: ['coordinated_network'] },
-      { id: 'ACC_NORM_018', risk_score: 69.65, risk_level: 'MEDIUM', patterns: ['circular_flow'] },
+      { id: 'ACC_MULE_HUB', risk_score: 97.1, risk_level: 'CRITICAL', patterns: ['fan_in', 'rapid_movement', 'structuring'] },
+      { id: 'ACC_MULE_CASHOUT', risk_score: 95.2, risk_level: 'CRITICAL', patterns: ['structuring'] },
+      { id: 'ACC_STRUCT_SRC', risk_score: 60.0, risk_level: 'MEDIUM', patterns: ['structuring'] },
+      { id: 'ACC_FANIN_HUB', risk_score: 60.0, risk_level: 'MEDIUM', patterns: ['fan_in'] },
+      { id: 'ACC_FANOUT_HUB', risk_score: 60.0, risk_level: 'MEDIUM', patterns: ['fan_out'] },
+      { id: 'ACC_CYCLE_B', risk_score: 44.4, risk_level: 'MEDIUM', patterns: ['circular_flow'] },
+      { id: 'ACC_COORD_00', risk_score: 40.0, risk_level: 'MEDIUM', patterns: ['coordinated_network'] },
       { id: 'ACC_NORM_004', risk_score: 18.2, risk_level: 'LOW', patterns: [] },
       { id: 'ACC_NORM_021', risk_score: 22.1, risk_level: 'LOW', patterns: [] },
-      { id: 'ACC_CHAIN_02', risk_score: 40.3, risk_level: 'MEDIUM', patterns: ['transaction_chain'] },
     ];
 
     // Position particles in a spherical/orbital layout
@@ -273,7 +278,7 @@ export default function HeroSection({
             marginBottom: '36px'
           }}>
             Detect suspicious transaction networks before they become financial threats. 
-            FlowGuard AI applies topological graph algorithms and explainable machine learning 
+            Cygnus AI applies topological graph algorithms and explainable machine learning 
             to uncover hidden layering, rapid movement, and coordinated illicit networks.
           </p>
 
@@ -337,7 +342,7 @@ export default function HeroSection({
         }}>
           {/* Card 1: Live Network Monitor Card */}
           <div 
-            onClick={() => onSelectAccount && onSelectAccount('ACC_COORD_00')}
+            onClick={() => onSelectAccount && onSelectAccount(topId)}
             className="glass-panel glass-panel-hover" 
             style={{
               padding: '24px',
@@ -359,12 +364,12 @@ export default function HeroSection({
                   LIVE NETWORK STATUS
                 </span>
               </div>
-              <span className="badge-risk badge-risk-critical">FLAGGED CLUSTER</span>
+              <span className={`badge-risk badge-risk-${(topNode?.risk_level || 'critical').toLowerCase()}`}>{topNode?.risk_level || 'FLAGGED'} ALERT</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
               <span style={{ fontSize: '2.5rem', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#FFFFFF' }}>
-                {stats?.total_accounts || 57}
+                {stats?.total_accounts ?? 0}
               </span>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 Monitored Accounts
@@ -385,10 +390,10 @@ export default function HeroSection({
               border: '1px solid rgba(255, 255, 255, 0.05)'
             }}>
               <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                Target Cluster: <strong style={{ color: 'var(--primary-neon)', fontFamily: 'var(--font-mono)' }}>ACC_COORD_00</strong>
+                Top Alert: <strong style={{ color: 'var(--primary-neon)', fontFamily: 'var(--font-mono)' }}>{topId}</strong>
               </span>
               <span style={{ fontSize: '0.82rem', color: '#EF4444', fontWeight: 600 }}>
-                Risk: 68.9/100
+                Risk: {topNode ? `${Number(topNode.risk_score).toFixed(1)}/100` : 'n/a'}
               </span>
             </div>
           </div>
@@ -419,7 +424,7 @@ export default function HeroSection({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px' }}>
               <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Incoming Transfer</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>$5,000.00</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>৳5,000.00</div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--primary-neon)', fontFamily: 'var(--font-mono)' }}>ACC_RAPID_IN</div>
               </div>
 
@@ -438,7 +443,7 @@ export default function HeroSection({
 
               <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Outgoing Forward (95%)</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#EF4444', fontFamily: 'var(--font-mono)' }}>$4,750.00</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#EF4444', fontFamily: 'var(--font-mono)' }}>৳4,750.00</div>
                 <div style={{ fontSize: '0.68rem', color: '#EF4444', fontFamily: 'var(--font-mono)' }}>ACC_RAPID_OUT</div>
               </div>
             </div>

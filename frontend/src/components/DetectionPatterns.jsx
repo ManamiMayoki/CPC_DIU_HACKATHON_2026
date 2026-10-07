@@ -1,14 +1,12 @@
-import React from 'react';
-import { 
-  Zap, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Repeat, 
-  GitCommit, 
-  Share2, 
+import {
+  Zap,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Repeat,
+  GitCommit,
+  Share2,
   Users,
-  CheckCircle,
-  AlertTriangle,
+  Layers,
   ArrowRight
 } from 'lucide-react';
 
@@ -22,6 +20,7 @@ export default function DetectionPatterns({ patternsSummary = [], onInvestigateA
       case 'transaction_chain': return GitCommit;
       case 'circular_flow': return Repeat;
       case 'coordinated_network': return Users;
+      case 'structuring': return Layers;
       default: return Share2;
     }
   };
@@ -67,7 +66,7 @@ export default function DetectionPatterns({ patternsSummary = [], onInvestigateA
         </p>
       </div>
 
-      {/* Grid of 6 Detection Patterns Cards */}
+      {/* Grid of Detection Pattern Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',

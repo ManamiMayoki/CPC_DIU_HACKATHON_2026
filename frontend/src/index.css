@@ -1,5 +1,5 @@
 /* ===================================================================
-   FLOWGUARD AI - Global Styles & Design System
+   CYGNUS AI - Global Styles & Design System
    Fintech Cybersecurity Aesthetic (Inspired by Velopay & AgroTrade)
    =================================================================== */
 
@@ -316,4 +316,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .input-fintech::placeholder {
   color: var(--text-muted);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
 }
