@@ -161,8 +161,7 @@ Local addresses after `docker compose up`:
 ## 8. Live deployment
 
 - **Dashboard and API:** http://20.219.7.216:3001 (API under `/api`, for example http://20.219.7.216:3001/api/health)
-- **Graph engine docs:** http://20.219.7.216:8000/docs
-- **ML engine docs:** http://20.219.7.216:8001/docs
+- The graph and ML engine docs run on ports 8000 and 8001 of the same host; whether they are reachable depends on the server's firewall.
 
 Sign in with the **AML Analyst** or **Compliance Officer** demo button. No password is needed in demo mode.
 
