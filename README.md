@@ -385,8 +385,9 @@ python -m ml.evaluation        # model comparison, bias check (about 6 minutes)
 python -m ml.benchmark --api http://localhost:5001   # throughput and API latency
 ```
 
-### Honest limits
+### Limitations & Future Scope
 
-All data is synthetic and the simulator was written by the same team as the detectors, so the
-reported accuracy is an upper bound. There is no upay integration, no real transaction data and
-no analyst pilot yet. Neo4j/Kafka streaming and a trained GNN are planned, not built.
+- **Synthetic Data:** Evaluation uses simulated transactions, not real-world financial data.
+- **Validation:** The simulator and detection models were developed by the same team, so reported performance may overestimate real-world accuracy.
+- **No Live Integration:** Upay integration, real transaction testing, and analyst pilot validation are pending.
+- **Future Development:** Neo4j, Kafka-based streaming, and a trained Graph Neural Network (GNN) are planned enhancements, not yet implemented.
