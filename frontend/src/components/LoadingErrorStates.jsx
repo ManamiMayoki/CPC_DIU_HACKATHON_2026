@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity, AlertTriangle, Search, RefreshCw } from 'lucide-react';
 
 export function LoadingState({ message = 'Analyzing transaction network...' }) {

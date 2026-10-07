@@ -37,6 +37,8 @@ def extract_graph_features(
     - cycle_detected: 1 if account belongs to a circular flow cycle, else 0
     - cycle_count: Number of detected cycles node participates in
     - chain_length: Maximum chain length involving this node (or 0)
+    - structuring_detected: 1 if account splits or collects near-threshold transactions, else 0
+    - near_threshold_tx_count: Near-threshold transactions in the account's busiest structuring window
     - network_size: Size of the weakly connected component containing this node
     - suspicious_neighbor_count: Number of direct 1-hop neighbors flagged in detected patterns
 
@@ -53,6 +55,12 @@ def extract_graph_features(
     fan_out_nodes = set(patterns.get("fan_out", PatternDetectionResult("fan_out", False, [])).flagged_accounts)
     rapid_nodes = set(patterns.get("rapid_movement", PatternDetectionResult("rapid_movement", False, [])).flagged_accounts)
     coord_nodes = set(patterns.get("coordinated_network", PatternDetectionResult("coordinated_network", False, [])).flagged_accounts)
+    structuring_res = patterns.get("structuring", PatternDetectionResult("structuring", False, []))
+    structuring_nodes = set(structuring_res.flagged_accounts)
+    node_near_threshold: Dict[str, int] = {}
+    for detail in structuring_res.details:
+        acc = detail.get("account_id")
+        node_near_threshold[acc] = max(node_near_threshold.get(acc, 0), int(detail.get("near_threshold_count", 0)))
 
     # Cycle lookup
     cycle_res = patterns.get("circular_flow")
@@ -73,7 +81,7 @@ def extract_graph_features(
                 node_chain_lens[n] = max(node_chain_lens.get(n, 0), hops)
 
     # Union of all flagged nodes across any pattern
-    all_flagged: Set[str] = fan_in_nodes | fan_out_nodes | rapid_nodes | coord_nodes | cycle_nodes
+    all_flagged: Set[str] = fan_in_nodes | fan_out_nodes | rapid_nodes | coord_nodes | cycle_nodes | structuring_nodes
 
     # Precompute weakly connected component sizes
     wcc_map: Dict[str, int] = {}
@@ -121,6 +129,8 @@ def extract_graph_features(
             "cycle_detected": 1 if node in cycle_nodes else 0,
             "cycle_count": int(node_cycle_counts.get(node, 0)),
             "chain_length": int(node_chain_lens.get(node, 0)),
+            "structuring_detected": 1 if node in structuring_nodes else 0,
+            "near_threshold_tx_count": int(node_near_threshold.get(node, 0)),
             "network_size": int(wcc_map.get(node, 1)),
             "suspicious_neighbor_count": int(suspicious_neighbors),
         })

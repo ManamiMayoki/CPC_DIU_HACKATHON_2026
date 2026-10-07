@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, FileText, ArrowRight, ArrowUpRight, ArrowDownLeft, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { Search, FileText, ArrowRight } from 'lucide-react';
 
 export default function TransactionLedger({ 
   transactions = [], 
@@ -69,7 +69,7 @@ export default function TransactionLedger({
 
           <input
             type="number"
-            placeholder="Min Amount ($)"
+            placeholder="Min Amount (BDT)"
             value={minAmount}
             onChange={(e) => { setMinAmount(e.target.value); setPage(1); }}
             className="input-fintech"
@@ -87,7 +87,7 @@ export default function TransactionLedger({
               <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>SENDER</th>
               <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>DIRECTION</th>
               <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>RECEIVER</th>
-              <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>AMOUNT ($)</th>
+              <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>AMOUNT (BDT)</th>
               <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>TIMESTAMP</th>
               <th style={{ padding: '16px 20px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textAlign: 'right' }}>ACTION</th>
             </tr>
@@ -159,7 +159,7 @@ export default function TransactionLedger({
 
                 {/* Amount */}
                 <td style={{ padding: '14px 20px', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.95rem', color: '#FFFFFF' }}>
-                  ${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ৳{Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
 
                 {/* Timestamp */}

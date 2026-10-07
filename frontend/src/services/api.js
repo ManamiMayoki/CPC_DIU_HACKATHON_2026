@@ -1,5 +1,5 @@
 /**
- * FlowGuard AI - API Service Layer
+ * Cygnus AI - API Service Layer
  * Connects frontend to Express backend with resilient fallback to pre-computed state.
  */
 
@@ -9,8 +9,10 @@ export async function fetchHealth() {
   try {
     const res = await fetch(`${API_BASE}/health`);
     if (res.ok) return await res.json();
-  } catch (_) {}
-  return { status: 'offline', accounts_cached: 57 };
+  } catch {
+    // fall through to the offline default below
+  }
+  return { status: 'offline', accounts_cached: 0 };
 }
 
 export async function fetchInitialData() {
@@ -24,7 +26,7 @@ export async function fetchInitialData() {
       }
     }
   } catch (err) {
-    console.warn('[FlowGuard API] Backend /api/pipeline not responding, using local fallback:', err.message);
+    console.warn('[Cygnus API] Backend /api/pipeline not responding, using local fallback:', err.message);
   }
 
   // 2. Fallback to public initial state
@@ -34,7 +36,7 @@ export async function fetchInitialData() {
       return await res.json();
     }
   } catch (err) {
-    console.error('[FlowGuard API] Fallback file read error:', err.message);
+    console.error('[Cygnus API] Fallback file read error:', err.message);
   }
 
   throw new Error('Unable to load transaction network data from backend or local fallback.');
@@ -63,8 +65,21 @@ export async function fetchAccountDetails(accountId) {
   try {
     const res = await fetch(`${API_BASE}/accounts/${encodeURIComponent(accountId)}`);
     if (res.ok) return await res.json();
-  } catch (_) {}
+  } catch {
+    // fall through to the offline default below
+  }
   return { success: false, error: 'Account not found' };
+}
+
+export async function fetchInvestigation(accountId) {
+  try {
+    const res = await fetch(`${API_BASE}/investigate/${encodeURIComponent(accountId)}`);
+    if (res.ok) return await res.json();
+    const errData = await res.json().catch(() => ({}));
+    return { success: false, error: errData.error || 'Investigation request failed' };
+  } catch (err) {
+    return { success: false, error: `Backend not reachable (${err.message}); showing the offline briefing.` };
+  }
 }
 
 export async function runCustomPipeline(transactions) {

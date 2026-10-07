@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  Shield, 
-  Search, 
-  Activity, 
-  Layers, 
-  TrendingUp, 
-  AlertTriangle, 
-  FileText, 
+import { useState } from 'react';
+import {
+  Shield,
+  Search,
+  Activity,
+  Layers,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
   Zap,
   Info,
   ChevronDown,
@@ -18,8 +18,7 @@ export default function Navbar({
   setActiveTab,
   onSearchAccount,
   demoScenarios = [],
-  onSelectScenario,
-  isLive = true
+  onSelectScenario
 }) {
   const [searchInput, setSearchInput] = useState('');
   const [showDemoMenu, setShowDemoMenu] = useState(false);
@@ -59,6 +58,8 @@ export default function Navbar({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        rowGap: '10px',
         gap: '20px'
       }}>
         {/* Brand Logo & Title */}
@@ -94,7 +95,7 @@ export default function Navbar({
                 letterSpacing: '-0.02em',
                 color: '#FFFFFF'
               }}>
-                FLOWGUARD
+                CYGNUS
               </span>
               <span style={{
                 background: 'linear-gradient(90deg, #B8FF3D, #38BDF8)',
@@ -127,7 +128,9 @@ export default function Navbar({
           background: 'rgba(13, 17, 26, 0.6)',
           padding: '4px 6px',
           borderRadius: '9999px',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          order: 3,
+          flexWrap: 'wrap'
         }}>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -165,7 +168,7 @@ export default function Navbar({
         </nav>
 
         {/* Right Tools: Search Bar & Demo Scenarios Dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: 'auto', order: 2 }}>
           {/* Quick Account Search */}
           <form onSubmit={handleSearchSubmit} style={{ position: 'relative' }}>
             <Search 
@@ -319,7 +322,7 @@ export default function Navbar({
               boxShadow: '0 0 8px #22C55E',
               display: 'inline-block'
             }} />
-            <span>42/42 Tests Verified</span>
+            <span>50/50 Tests Verified</span>
           </div>
         </div>
       </div>

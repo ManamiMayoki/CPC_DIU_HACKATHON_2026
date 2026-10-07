@@ -1,5 +1,4 @@
-import React from 'react';
-import { Zap, Play, CheckCircle2, Shield, ArrowRight } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export default function DemoScenarioBar({
   scenarios = [],
