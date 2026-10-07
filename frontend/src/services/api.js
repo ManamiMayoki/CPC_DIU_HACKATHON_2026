@@ -3,7 +3,7 @@
  * Connects frontend to Express backend with resilient fallback to pre-computed state.
  */
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
 
 export async function fetchHealth() {
   try {
