@@ -31,6 +31,7 @@ from ml.inference import run_pipeline
 from ml.validation import validate_transactions
 from graph import build_transaction_graph, get_graph_summary
 from data.synthetic.generator import SyntheticDataGenerator
+from data.synthetic.profiles import build_profiles
 
 
 DEFAULT_SAMPLE_PATH = os.path.join(DATA_DIR, "transactions_sample.json")
@@ -504,7 +505,8 @@ def get_account_subgraph(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cygnus AI Integration Adapter")
-    parser.add_argument("--action", choices=["analyze", "account", "scenarios", "summary"], default="analyze")
+    parser.add_argument("--action", choices=["analyze", "account", "scenarios", "summary", "profiles"], default="analyze")
+    parser.add_argument("--with-profiles", action="store_true", help="Attach synthetic KYC profiles (server-side use only)")
     parser.add_argument("--account", type=str, help="Target account ID")
     parser.add_argument("--hops", type=int, default=1, help="Ego network hops")
     parser.add_argument("--out", type=str, help="Output JSON path")
@@ -527,8 +529,13 @@ def main() -> None:
             "risk_distribution": full["risk_distribution"],
             "patterns_summary": full["patterns_summary"],
         }
+    elif args.action == "profiles":
+        txs = validate_transactions(transactions or load_sample_transactions(), strict=False).valid_transactions
+        output = build_profiles(a for tx in txs for a in (tx["sender_id"], tx["receiver_id"]))
     else:
         output = analyze_dataset(transactions)
+        if args.with_profiles:
+            output["account_profiles"] = build_profiles(n["id"] for n in output["nodes"])
 
     json_str = json.dumps(output, indent=2)
     if args.out:

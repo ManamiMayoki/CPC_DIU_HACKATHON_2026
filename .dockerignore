@@ -9,3 +9,6 @@
 .git
 *.pptx
 *.pdf
+ml/artifacts
+backend/data
+.claude

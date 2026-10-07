@@ -23,6 +23,7 @@ jobs:
         run: |
           cd backend
           npm install
+          npm test
 
       - name: Install & Build Frontend
         run: |
@@ -39,3 +40,8 @@ jobs:
         run: |
           cd graph-engine && pip install -r requirements.txt
           cd ../ml && pip install -r requirements.txt
+
+      - name: Run Python Tests
+        run: |
+          pip install pytest
+          python -m pytest -q
