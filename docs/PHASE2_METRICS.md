@@ -14,7 +14,7 @@ Run at 2026-10-07T03:59:44Z (took 434 s).
 
 ## Dataset
 
-Synthetic Bangladesh-style MFS networks (personal wallets, agents, merchants) with six planted typologies and legitimate look-alike traffic. Models are trained on two networks, tuned on a third and tested on separate networks generated with different random seeds.
+Synthetic Bangladesh-style MFS networks (personal wallets, agents, merchants) with seven planted typologies and legitimate look-alike traffic. Models are trained on two networks, tuned on a third and tested on separate networks generated with different random seeds.
 
 | Network | Transactions | Accounts | Suspicious accounts | Suspicious rate |
 |---|---:|---:|---:|---:|
