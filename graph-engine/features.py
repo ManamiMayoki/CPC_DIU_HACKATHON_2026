@@ -79,6 +79,9 @@ def extract_graph_features(
             hops = detail.get("hops", 0)
             for n in detail.get("chain_path", []):
                 node_chain_lens[n] = max(node_chain_lens.get(n, 0), hops)
+        # Temporal mode reports every account's chain length, not only those in the capped detail list
+        for n, hops in getattr(chain_res, "chain_lengths", {}).items():
+            node_chain_lens[n] = max(node_chain_lens.get(n, 0), hops)
 
     # Union of all flagged nodes across any pattern
     all_flagged: Set[str] = fan_in_nodes | fan_out_nodes | rapid_nodes | coord_nodes | cycle_nodes | structuring_nodes

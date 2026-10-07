@@ -23,7 +23,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 from graph import build_transaction_graph, get_graph_summary
-from patterns import run_all_network_detections, PatternDetectionResult
+from patterns import run_all_network_detections, PatternDetectionResult, TEMPORAL_MODE_NODE_LIMIT
 from features import extract_graph_features
 from ml.validation import validate_transactions, ValidationResult
 
@@ -32,8 +32,10 @@ from ml.validation import validate_transactions, ValidationResult
 class GraphEngine:
     """Core analysis engine for transaction graphs and topological pattern discovery."""
 
-    def __init__(self, strict_validation: bool = False) -> None:
+    def __init__(self, strict_validation: bool = False, temporal: Optional[bool] = None) -> None:
         self.strict_validation = strict_validation
+        # None = choose by graph size (see patterns.TEMPORAL_MODE_NODE_LIMIT)
+        self.temporal = temporal
 
     def analyze(
         self,
@@ -74,7 +76,7 @@ class GraphEngine:
         summary = get_graph_summary(graph)
 
         # Step 3: Run pattern detections
-        pattern_results: Dict[str, PatternDetectionResult] = run_all_network_detections(graph)
+        pattern_results: Dict[str, PatternDetectionResult] = run_all_network_detections(graph, temporal=self.temporal)
 
         # Convert pattern results to JSON-serializable dictionaries
         patterns_dict = {}
@@ -102,6 +104,9 @@ class GraphEngine:
             "graph_summary": summary,
             "patterns": patterns_dict,
             "account_features": account_features,
+            "detection_mode": "temporal flow tracing" if (
+                self.temporal if self.temporal is not None else graph.number_of_nodes() > TEMPORAL_MODE_NODE_LIMIT
+            ) else "exhaustive graph search",
         }
 
 

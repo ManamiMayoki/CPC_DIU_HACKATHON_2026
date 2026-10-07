@@ -13,6 +13,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import pandas as pd
 
 
+# tx_type: send_money | cash_in | cash_out | payment | salary | inward_remittance | float_topup | ...
+# location: area the sender transacted from; device_id: the sender's handset identifier
+OPTIONAL_CONTEXT_FIELDS = ("tx_type", "location", "device_id")
+
+
 class TransactionValidationError(ValueError):
     """Raised when financial transaction data fails strict security/integrity checks."""
     pass
@@ -181,6 +186,11 @@ def validate_single_transaction(
         "amount": round(amount_val, 4),
         "timestamp": parsed_dt.isoformat(),
     }
+    # Optional context used by the location and hundi detectors. Kept only as short clean strings.
+    for field in OPTIONAL_CONTEXT_FIELDS:
+        value = tx.get(field) if isinstance(tx, dict) else None
+        if value is not None and str(value).strip() and str(value).strip().lower() != "nan":
+            cleaned[field] = "".join(ch for ch in str(value).strip() if ch.isprintable())[:64]
 
     return True, None, cleaned
 
