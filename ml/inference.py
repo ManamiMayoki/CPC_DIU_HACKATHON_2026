@@ -24,6 +24,7 @@ for p in (CURRENT_DIR, PROJECT_ROOT, GRAPH_DIR):
 from ml.validation import validate_transactions, ValidationResult
 from ml.features import extract_transaction_features, build_ml_feature_vector
 from ml.model import AnomalyDetector, ExplainableRiskScorer, RiskLevel
+from ml.investigator import build_investigation
 from engine import GraphEngine
 
 
@@ -44,17 +45,27 @@ def generate_account_evidence(
     # 1. Graph Pattern Evidence
     if "circular_flow" in active_patterns:
         c_count = int(features.get("cycle_count", 1))
-        evidence.append(
-            f"Circular flow pattern detected: account participates in {c_count} directed cycle(s)."
-        )
+        c_info = pattern_details.get("circular_flow", {})
+        if c_info.get("loop_duration_seconds") is not None:
+            evidence.append(
+                f"Circular flow pattern detected: funds travelled a {c_info.get('length')}-account loop "
+                f"({' -> '.join(c_info.get('cycle_path', []))}) and returned in "
+                f"{round(c_info['loop_duration_seconds'] / 60)} minutes with "
+                f"{round(c_info.get('amount_retained_ratio', 0) * 100)}% of the value."
+            )
+        else:
+            evidence.append(
+                f"Circular flow pattern detected: account participates in {c_count} directed cycle(s)."
+            )
 
     if "rapid_movement" in active_patterns:
         # Check details for fastest latency
         rapid_info = pattern_details.get("rapid_movement", {})
         latency = rapid_info.get("fastest_latency_seconds")
         if latency is not None:
+            when = "under a minute" if latency < 60 else f"{round(latency / 60)} minutes"
             evidence.append(
-                f"Rapid fund movement detected: funds forwarded within {int(latency)} seconds of receipt."
+                f"Rapid fund movement detected: funds forwarded within {when} of receipt."
             )
         else:
             evidence.append("Rapid fund movement detected: funds forwarded shortly after receipt.")
@@ -63,15 +74,28 @@ def generate_account_evidence(
         in_deg = features.get("in_degree", 0)
         out_deg = features.get("out_degree", 0)
         evidence.append(
-            f"Fan-in pattern detected: received funds from {in_deg} distinct senders with only {out_deg} outgoing counterparty."
+            f"Fan-in pattern detected: received funds from {int(in_deg)} distinct senders with only {int(out_deg)} outgoing counterparties."
         )
 
     if "fan_out" in active_patterns:
         in_deg = features.get("in_degree", 0)
         out_deg = features.get("out_degree", 0)
         evidence.append(
-            f"Fan-out pattern detected: dispersed funds to {out_deg} distinct receivers from {in_deg} incoming source(s)."
+            f"Fan-out pattern detected: dispersed funds to {int(out_deg)} distinct receivers from {int(in_deg)} incoming source(s)."
         )
+
+    if "structuring" in active_patterns:
+        s_info = pattern_details.get("structuring", {})
+        count = s_info.get("near_threshold_count")
+        threshold = s_info.get("reporting_threshold")
+        if count and threshold:
+            verb = "sent" if s_info.get("role") == "splitter" else "received"
+            evidence.append(
+                f"Structuring detected: {verb} {count} transactions just under the {threshold:,.0f} threshold "
+                f"(total {s_info.get('total_amount', 0):,.0f}) within 24 hours."
+            )
+        else:
+            evidence.append("Structuring detected: repeated transactions kept just under the monitoring threshold.")
 
     if "coordinated_network" in active_patterns:
         evidence.append(
@@ -81,7 +105,7 @@ def generate_account_evidence(
     chain_len = features.get("chain_length", 0)
     if chain_len >= 3:
         evidence.append(
-            f"Transaction chain detected: participates in a multi-hop path spanning {chain_len} hops."
+            f"Transaction chain detected: participates in a multi-hop path spanning {int(chain_len)} hops."
         )
 
     # 2. Behavioral Indicators Evidence
@@ -102,7 +126,7 @@ def generate_account_evidence(
     suspicious_neighbors = features.get("suspicious_neighbor_count", 0)
     if suspicious_neighbors >= 2:
         evidence.append(
-            f"High network exposure: directly connected to {suspicious_neighbors} accounts with flagged patterns."
+            f"High network exposure: directly connected to {int(suspicious_neighbors)} accounts with flagged patterns."
         )
 
     passthrough = features.get("passthrough_ratio", 0.0)
@@ -182,12 +206,15 @@ def run_pipeline(
                 account_patterns[acc] = []
             account_patterns[acc].append(p_name)
 
-        # Map detail for rapid movement
-        if p_name == "rapid_movement":
-            for d in p_data.get("details", []):
-                acc = d.get("intermediary_account")
-                if acc:
-                    pattern_detail_map[acc] = {"rapid_movement": d}
+        # Keep each account's own detail record per pattern for evidence and the investigator
+        for d in p_data.get("details", []):
+            if p_name in ("circular_flow", "transaction_chain", "coordinated_network"):
+                members = d.get("nodes") or d.get("chain_path") or d.get("accounts") or []
+            else:
+                members = [d.get("account_id") or d.get("intermediary_account")]
+            for acc in members:
+                if acc and p_name not in pattern_detail_map.setdefault(acc, {}):
+                    pattern_detail_map[acc][p_name] = d
 
     # 3. Feature Extraction
     tx_features_df = extract_transaction_features(valid_txs)
@@ -255,6 +282,8 @@ def run_pipeline(
                 "cycle_detected",
                 "cycle_count",
                 "chain_length",
+                "structuring_detected",
+                "near_threshold_tx_count",
                 "network_size",
                 "suspicious_neighbor_count",
             ]
@@ -281,19 +310,21 @@ def run_pipeline(
         }
 
 
-        account_reports.append(
-            {
-                "account_id": acc_id,
-                "risk_score": final_score,
-                "risk_level": risk_tier,
-                "is_anomaly": is_anomaly,
-                "patterns": active_pats,
-                "scoring_breakdown": breakdown,
-                "evidence": evidence_list,
-                "graph_features": graph_feats,
-                "ml_features": ml_feats,
-            }
+        report = {
+            "account_id": acc_id,
+            "risk_score": final_score,
+            "risk_level": risk_tier,
+            "is_anomaly": is_anomaly,
+            "patterns": active_pats,
+            "scoring_breakdown": breakdown,
+            "evidence": evidence_list,
+            "graph_features": graph_feats,
+            "ml_features": ml_feats,
+        }
+        report["investigation"] = build_investigation(
+            report, feature_row, pattern_detail_map.get(acc_id, {})
         )
+        account_reports.append(report)
 
     # Sort accounts by risk score descending
     account_reports.sort(key=lambda x: x["risk_score"], reverse=True)

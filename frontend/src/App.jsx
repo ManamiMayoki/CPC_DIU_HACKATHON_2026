@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import TrustStats from './components/TrustStats';
@@ -12,7 +12,7 @@ import TransactionLedger from './components/TransactionLedger';
 import DemoScenarioBar from './components/DemoScenarioBar';
 import ArchitectureModal from './components/ArchitectureModal';
 import { LoadingState, ErrorState } from './components/LoadingErrorStates';
-import { fetchInitialData, fetchAccountNetwork } from './services/api';
+import { fetchInitialData } from './services/api';
 import { Shield, Sparkles, Layers, ArrowRight } from 'lucide-react';
 
 export default function App() {
@@ -21,8 +21,8 @@ export default function App() {
   const [data, setData] = useState(null);
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedAccountId, setSelectedAccountId] = useState('ACC_FANIN_HUB');
-  const [activeScenarioId, setActiveScenarioId] = useState('FAN_IN');
+  const [selectedAccountId, setSelectedAccountId] = useState('ACC_MULE_HUB');
+  const [activeScenarioId, setActiveScenarioId] = useState('MULE_RING');
 
   // Load initial data
   const loadData = async () => {
@@ -31,18 +31,25 @@ export default function App() {
     try {
       const payload = await fetchInitialData();
       setData(payload);
-      if (payload.top_risk_accounts && payload.top_risk_accounts.length > 0) {
+      // Open on the mule-ring demo when it is in the data, otherwise on the top-risk account
+      const muleRing = payload.demo_scenarios?.find((sc) => sc.id === 'MULE_RING');
+      if (muleRing && payload.accounts?.some((acc) => acc.account_id === muleRing.target_account)) {
+        setSelectedAccountId(muleRing.target_account);
+      } else if (payload.top_risk_accounts && payload.top_risk_accounts.length > 0) {
         setSelectedAccountId(payload.top_risk_accounts[0].account_id);
+        setActiveScenarioId(null);
       }
     } catch (err) {
       console.error('Failed to load initial data:', err);
-      setError(err.message || 'Unable to connect to FlowGuard detection pipeline.');
+      setError(err.message || 'Unable to connect to Cygnus detection pipeline.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // One-time data load on mount; loadData sets loading/data/error state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
 
@@ -73,7 +80,7 @@ export default function App() {
   };
 
   if (loading) {
-    return <LoadingState message="Initializing FlowGuard AI Detection Pipeline..." />;
+    return <LoadingState message="Initializing Cygnus AI Detection Pipeline..." />;
   }
 
   if (error && !data) {
@@ -205,6 +212,12 @@ export default function App() {
                   </h3>
                 </div>
 
+                {selectedAccount?.investigation?.summary && (
+                  <p style={{ fontSize: '0.9rem', color: '#E2E8F0', lineHeight: 1.55, marginBottom: '14px' }}>
+                    {selectedAccount.investigation.summary}
+                  </p>
+                )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {selectedAccount?.evidence && selectedAccount.evidence.length > 0 ? (
                     selectedAccount.evidence.map((ev, i) => (
@@ -310,7 +323,7 @@ export default function App() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Shield size={18} color="var(--primary-neon)" />
-            <span style={{ fontWeight: 700, color: '#FFFFFF' }}>FLOWGUARD AI</span>
+            <span style={{ fontWeight: 700, color: '#FFFFFF' }}>CYGNUS AI</span>
             <span>— AI-Powered Transaction Network Intelligence</span>
           </div>
 
