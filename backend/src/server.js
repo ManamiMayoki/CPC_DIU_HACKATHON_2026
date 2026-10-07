@@ -146,7 +146,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'Cygnus AI Detection Backend',
     contract_version: '1.0.0',
-    verification: '67 Python + 10 API tests passing',
+    verification: '71 Python + 10 API tests passing',
     security: { authentication: 'signed session tokens', roles: Object.keys(ROLES), audit_log: 'hash-chained', pii: 'masked by default' },
     ai_narrative: hasCredentials() ? 'claude' : 'rule-based',
     accounts_cached: cachedData?.nodes?.length || 0,

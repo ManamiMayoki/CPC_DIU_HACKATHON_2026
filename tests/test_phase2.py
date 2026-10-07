@@ -197,7 +197,7 @@ def test_business_as_usual_patterns_do_not_count_against_agents():
     personal = scorer.compute_composite_risk("P", 10.0, False, {}, flags, account_tier="personal")[2]["graph_component"]
     agent = scorer.compute_composite_risk("A", 10.0, False, {}, flags, account_tier="agent")[2]["graph_component"]
     assert personal == 80.0 and agent == 0.0
-    # structuring or a circular flow still counts for an agent
+    # a circular flow still counts for an agent
     assert scorer.compute_composite_risk("A", 10.0, False, {}, {"circular_flow": True}, account_tier="agent")[2]["graph_component"] == 35.0
 
 
@@ -219,3 +219,86 @@ def test_profiles_are_deterministic_and_tiered():
     assert infer_tier("ACC_MULE_CASHOUT") == "agent" and infer_tier("ACC_MERCH_0001") == "merchant" and infer_tier("ACC_P_1") == "personal"
     profile = build_profile("ACC_X")
     assert profile["synthetic"] is True and len(profile["phone"]) == 11 and len(profile["national_id"]) == 10
+
+
+# ------------------------------------------------------------ context detectors
+from ml.context_risk import run_context_detectors  # noqa: E402
+from ml.validation import validate_transactions  # noqa: E402
+
+
+def _ctx(i, sender, receiver, amount, timestamp, area, device, tx_type="send_money"):
+    return {**_tx(i, sender, receiver, amount, timestamp), "location": area, "device_id": device, "tx_type": tx_type}
+
+
+def _history(account, area, device, start=0):
+    return [_ctx(f"{account}{start + d}", account, "SHOP", 400, f"2026-03-0{d + 1}T10:00:00Z", area, device, "payment") for d in range(4)]
+
+
+def test_validation_keeps_context_fields():
+    raw = [_ctx(1, "A", "B", 100, "2026-03-01T10:00:00Z", "Zone-03", "DEV-1"), _tx(2, "A", "B", 50, "2026-03-01T11:00:00Z")]
+    clean = validate_transactions(raw).valid_transactions
+    assert clean[0]["location"] == "Zone-03" and clean[0]["device_id"] == "DEV-1" and clean[0]["tx_type"] == "send_money"
+    assert "location" not in clean[1]
+
+
+def test_takeover_needs_a_break_from_the_customers_own_baseline():
+    risk = {"Zone-13"}
+    txs = (
+        _history("VICTIM", "Zone-02", "DEV-V1") + _history("VICTIM2", "Zone-04", "DEV-W1")
+        + _history("RESIDENT", "Zone-13", "DEV-R1") + _history("TRAVELLER", "Zone-02", "DEV-T1")
+        + [
+            # victims: risk area + new handset + large outflow to someone never paid before
+            _ctx("v1", "VICTIM", "COLLECTOR", 9000, "2026-03-06T02:00:00Z", "Zone-13", "DEV-STOLEN"),
+            _ctx("v2", "VICTIM2", "COLLECTOR", 8000, "2026-03-06T02:30:00Z", "Zone-13", "DEV-STOLEN2"),
+            # resident: same area and size of payment, but it is their normal area
+            _ctx("r1", "RESIDENT", "COLLECTOR", 9000, "2026-03-06T03:00:00Z", "Zone-13", "DEV-R1"),
+            # traveller: risk area, own handset, ordinary small payment to a shop already used
+            _ctx("t1", "TRAVELLER", "SHOP", 450, "2026-03-06T12:00:00Z", "Zone-13", "DEV-T1", "payment"),
+        ]
+    )
+    result = run_context_detectors(txs, risk_areas=risk)
+    assert result["location_anomaly"]["flagged_accounts"] == ["VICTIM", "VICTIM2"]
+    detail = result["location_anomaly"]["details"][0]
+    assert detail["usual_areas"] and detail["new_device"] and "new handset" in detail["signals"]
+    assert result["takeover_collector"]["flagged_accounts"] == ["COLLECTOR"]
+    # no risk areas configured -> nothing is flagged
+    assert not run_context_detectors(txs, risk_areas=set())["location_anomaly"]["detected"]
+
+
+def _hundi(operator, inflow_type, cycles=2, sender="FUNDER"):
+    txs = []
+    for c in range(cycles):
+        day = 2 + 7 * c
+        for k in range(3):
+            txs.append(_ctx(f"{operator}in{c}{k}", f"{sender}{k % 2}", operator, 20000, f"2026-03-{day:02d}T10:{k}0:00Z", "Zone-05", "D", inflow_type))
+        for b in range(6):
+            txs.append(_ctx(f"{operator}out{c}{b}", operator, f"{operator}_FAMILY{b}", 9000, f"2026-03-{day:02d}T14:{b}0:00Z", "Zone-05", "D", "cash_in"))
+    return txs
+
+
+def test_hundi_needs_informal_funding_and_recurrence():
+    tiers = {"ACC_AGENT_H": "agent", "ACC_AGENT_FORMAL": "agent", "PARTNER0": "merchant", "PARTNER1": "merchant"}
+    txs = (
+        _hundi("ACC_AGENT_H", "send_money")                                   # informal, recurring -> hundi
+        + _hundi("ACC_AGENT_FORMAL", "inward_remittance", sender="PARTNER")   # licensed remittance payout
+        + _hundi("ONE_OFF", "send_money", cycles=1, sender="RELATIVE")        # a single family payout
+    )
+    result = run_context_detectors(txs, tiers)
+    assert result["hundi_operator"]["flagged_accounts"] == ["ACC_AGENT_H"]
+    detail = result["hundi_operator"]["details"][0]
+    assert detail["cycles"] == 2 and detail["beneficiary_count"] == 6 and detail["repeat_beneficiary_share"] == 1.0
+    assert result["hundi_funder"]["flagged_accounts"] == ["FUNDER0", "FUNDER1"]
+    # beneficiaries are never flagged
+    assert not any("FAMILY" in acc for r in result.values() for acc in r["flagged_accounts"])
+
+
+def test_demo_scenarios_for_hundi_and_takeover(sample_result):
+    accounts = {a["account_id"]: a for a in sample_result["accounts"]}
+    assert "hundi_operator" in accounts["ACC_HUNDI_AGENT"]["patterns"] and accounts["ACC_HUNDI_AGENT"]["risk_level"] in ("HIGH", "CRITICAL")
+    assert accounts["ACC_HUNDI_AGENT"]["investigation"]["typology"].startswith("Hundi operator")
+    assert "takeover_collector" in accounts["ACC_TKO_COLLECTOR"]["patterns"] and accounts["ACC_TKO_COLLECTOR"]["risk_score"] >= 70
+    for i in (1, 2, 3):
+        victim = accounts[f"ACC_TKO_VICTIM_0{i}"]
+        assert victim["patterns"] == ["location_anomaly"] and victim["risk_level"] == "MEDIUM"
+    assert accounts["ACC_TKO_RESIDENT"]["risk_level"] == "LOW" and not accounts["ACC_TKO_RESIDENT"]["patterns"]
+    assert all(accounts[f"ACC_HUNDI_FAMILY_0{i}"]["risk_level"] == "LOW" for i in range(1, 7))

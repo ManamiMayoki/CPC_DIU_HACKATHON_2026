@@ -1,0 +1,5 @@
+{
+  "note": "Areas where the fraud-operations team has seen stolen or compromised devices being used. Demo values only: the zone names are synthetic placeholders. In a upay deployment this list is maintained by upay fraud operations from confirmed cases and law-enforcement advisories, and reviewed on a schedule so an area does not stay listed without evidence.",
+  "risk_areas": ["Zone-13", "Zone-14"],
+  "reviewed_on": "2026-10-07"
+}

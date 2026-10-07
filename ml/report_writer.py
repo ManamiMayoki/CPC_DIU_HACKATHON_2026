@@ -138,6 +138,29 @@ def render_markdown(results: Dict[str, Any]) -> str:
                 f"{pct(t['recall_isolation_forest'])} | {pct(t['recall_graph_detectors'])} | {pct(t['recall_rules'])} |"
             )
 
+        ctx = model.get("context_detectors")
+        if ctx:
+            lines += [
+                "",
+                "## Context detectors: risk-area account takeover and hundi",
+                "",
+                "| Detector | True cases | Flagged | Precision | Recall | False-positive rate |",
+                "|---|---:|---:|---:|---:|---:|",
+            ]
+            for key in ("location_anomaly", "takeover_collector", "hundi_operator", "hundi_funder"):
+                d = ctx[key]
+                lines.append(f"| {d['label']} | {d['true_cases']} | {d['flagged']} | {pct(d['precision'])} | {pct(d['recall'])} | {pct(d['false_positive_rate'], 3)} |")
+            la = ctx["location_anomaly"]["legitimate_lookalikes"]
+            ha = ctx["hundi_operator"]["legitimate_lookalikes"]
+            lines += [
+                "",
+                f"- Customers who live in a risk area: {la['risk_area_residents_flagged']} of {la['risk_area_residents']:,} flagged.",
+                f"- Customers who only visited a risk area: {la['risk_area_visitors_flagged']} of {la['risk_area_visitors']:,} flagged.",
+                f"- Agents doing licensed remittance payout: {ha['licensed_remittance_agents_flagged']} of {ha['licensed_remittance_agents']} flagged.",
+                "",
+                ctx["note"],
+            ]
+
         bias = model["bias"]
         lines += [
             "",

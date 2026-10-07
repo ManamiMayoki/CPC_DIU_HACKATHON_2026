@@ -20,10 +20,22 @@ PATTERN_LABELS = {
     "circular_flow": "circular flow",
     "structuring": "structuring",
     "coordinated_network": "coordinated cluster",
+    "location_anomaly": "risk-area activity outside the customer's baseline",
+    "takeover_collector": "collection from suspected takeovers",
+    "hundi_operator": "hundi-style recurring payout",
+    "hundi_funder": "funding of a hundi operator",
 }
 
 # Ordered most to least specific; the first match names the case typology.
 TYPOLOGIES = [
+    ({"hundi_operator"}, "Hundi operator (informal remittance payout)",
+     "repeatedly receives large informal transfers from a few funders and pays them out to the same beneficiaries, outside licensed remittance channels"),
+    ({"hundi_funder"}, "Hundi funder",
+     "repeatedly sends large transfers to a wallet that pays them out as informal remittance"),
+    ({"takeover_collector"}, "Account-takeover collector",
+     "collects money from several wallets that were suddenly emptied from a risk area"),
+    ({"location_anomaly"}, "Possible account takeover (customer at risk)",
+     "was suddenly used from a risk area, outside this customer's normal pattern, to move money out fast"),
     ({"fan_in", "rapid_movement", "structuring"}, "Money-mule collection hub",
      "collects split deposits from many wallets and forwards them almost immediately"),
     ({"structuring", "fan_in"}, "Structured deposit collection",
@@ -71,6 +83,23 @@ NEXT_STEPS = {
     "transaction_chain": [
         "Follow the chain to its final destination wallet and review that wallet's cash-out activity.",
     ],
+    "location_anomaly": [
+        "Treat the customer as a possible victim: trigger step-up authentication (PIN reset, OTP to the registered SIM) and call the registered number.",
+        "Check for a recent SIM replacement or device change on the wallet and consider a temporary hold on outgoing transfers under upay policy.",
+        "If the customer confirms the activity is theirs, close as a false positive; the area then becomes part of their normal pattern.",
+    ],
+    "takeover_collector": [
+        "Hold outgoing transfers and cash-out on the collecting wallet under internal policy and review its KYC, device and agent linkage.",
+        "List every wallet that paid it during the suspected takeovers and contact those customers.",
+    ],
+    "hundi_operator": [
+        "Compare the payouts with licensed inward-remittance records; payouts with no matching formal remittance indicate hundi.",
+        "Interview the agent or wallet owner about the source of the large transfers and review the funders' KYC and income profile.",
+        "Check whether the same beneficiaries are paid on a monthly cycle and whether they have relatives working abroad.",
+    ],
+    "hundi_funder": [
+        "Establish the source of the funds sent to the operator and whether the funder is linked to an overseas hundi network.",
+    ],
     "coordinated_network": [
         "Review the cluster's KYC records together: shared addresses, devices, SIMs or registration agents point to common control.",
     ],
@@ -94,7 +123,7 @@ def _money(value: Any) -> str:
 def _related_accounts(account_id: str, pattern_details: Dict[str, Any]) -> List[str]:
     related: List[str] = []
     for detail in pattern_details.values():
-        for key in ("senders", "receivers", "nodes", "chain_path", "accounts", "counterparties"):
+        for key in ("senders", "receivers", "nodes", "chain_path", "accounts", "counterparties", "victims", "funders", "beneficiaries"):
             for acc in detail.get(key, []) or []:
                 if acc != account_id and acc not in related:
                     related.append(acc)
@@ -201,7 +230,7 @@ def build_investigation(report: Dict[str, Any], features: Dict[str, Any], patter
             summary += " The ML model still ranks it as an outlier, so a quick manual look is worthwhile."
 
     steps: List[str] = []
-    for pattern in ("structuring", "fan_in", "rapid_movement", "circular_flow", "fan_out", "transaction_chain", "coordinated_network"):
+    for pattern in ("hundi_operator", "hundi_funder", "takeover_collector", "location_anomaly", "structuring", "fan_in", "rapid_movement", "circular_flow", "fan_out", "transaction_chain", "coordinated_network"):
         if pattern in patterns:
             for step in NEXT_STEPS[pattern]:
                 if step not in steps:
