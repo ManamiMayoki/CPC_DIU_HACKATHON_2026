@@ -24,7 +24,7 @@ AI Dev Fest 2026 (upay track). **Live demo: http://20.219.7.216:3001**
 9. [Testing](#9-testing)
 10. [Other configuration](#10-other-configuration)
 
-Also: [Results](#results) · [Architecture](#architecture) · [API](#rest-api) · [Project structure](#project-structure) · [Limitations](#limitations) · [Disclaimer](#disclaimer)
+Also: [Report and slides](#report-and-slides) · [Results](#results) · [Architecture](#architecture) · [API](#rest-api) · [Project structure](#project-structure) · [Limitations](#limitations) · [Disclaimer](#disclaimer)
 
 ---
 
@@ -198,6 +198,12 @@ To test by hand: open the dashboard, sign in as AML Analyst, pick the **Mule-Rin
 - **No external accounts or access** are needed to run or test the project.
 
 ---
+
+## Report and slides
+
+- [Project report (PDF)](docs/submission/Cygnus-AI-Project-Report.pdf)
+- [Presentation slides (PDF)](docs/submission/Cygnus-AI-Slides.pdf)
+- [Presentation slides (PowerPoint)](docs/submission/Cygnus-AI-Slides.pptx)
 
 ## Results
 
