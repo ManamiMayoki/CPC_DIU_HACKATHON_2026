@@ -1,149 +1,349 @@
-# Cygnus AI - Celestial Intelligence for Financial Security & AML Compliance
+# Cygnus AI — Celestial Intelligence for Financial Forensics & AML Compliance
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python Version" />
+  <img src="https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white" alt="Node Version" />
+  <img src="https://img.shields.io/badge/Express-5.2-black?logo=express&logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Tests-50%2F50%20Passed-brightgreen?logo=pytest&logoColor=white" alt="Tests 50/50 Passed" />
+  <img src="https://img.shields.io/badge/Vercel-Deployment%20Ready-black?logo=vercel&logoColor=white" alt="Vercel Ready" />
+</p>
 
 ---
 
-## 1. Executive Summary
+## Table of Contents
+- [Executive Overview](#executive-overview)
+- [System Architecture](#system-architecture)
+- [Core Detection Capabilities](#core-detection-capabilities)
+  - [1. Graph Topological Pattern Detectors](#1-graph-topological-pattern-detectors)
+  - [2. Machine Learning Anomaly Engine](#2-machine-learning-anomaly-engine)
+  - [3. Explainable Composite Risk Scoring](#3-explainable-composite-risk-scoring)
+  - [4. AI Investigator & Narrative Synthesis](#4-ai-investigator--narrative-synthesis)
+- [Interactive Full-Stack Dashboard](#interactive-full-stack-dashboard)
+- [Quick Start Guide](#quick-start-guide)
+  - [Option A: Full-Stack with Docker Compose (Recommended)](#option-a-full-stack-with-docker-compose-recommended)
+  - [Option B: Local Modular Setup](#option-b-local-modular-setup)
+- [Cloud & Vercel Deployment](#cloud--vercel-deployment)
+- [REST API & Integration Contract](#rest-api--integration-contract)
+- [Comprehensive Test Suite & Benchmarks](#comprehensive-test-suite--benchmarks)
+- [Project Directory Structure](#project-directory-structure)
+- [Ethical Disclaimer](#ethical-disclaimer)
 
-This repository hosts the core intelligence layer of **Cygnus AI**—an end-to-end framework combining graph topology algorithms and unsupervised machine learning to detect suspicious financial transaction patterns on synthetic datasets.
+---
+
+## Executive Overview
+
+**Cygnus AI** is a financial intelligence and forensic analysis platform engineered to detect intricate financial crime topologies and money laundering (AML) operations across complex transactional networks.
+
+Unlike traditional rule-based transaction monitoring systems that evaluate transfers in isolation, Cygnus AI combines **directed graph topological analysis (NetworkX)** with **unsupervised anomaly detection (Isolation Forests)**. This hybrid architecture flags structural evasion strategies—such as layering loops, smurfing (structuring), and mule rings—and synthesizes deterministic, human-auditable case briefings for financial compliance officers and investigators.
 
 ```
-Synthetic Transactions
-        ↓
-Transaction Validation (Security)
-        ↓
-NetworkX Transaction Graph
-        ↓
-Network Pattern Detection (Fan-In, Fan-Out, Time-Ordered Cycles, Chains, Rapid Movement, Structuring, Coordinated Networks)
-        ↓
-Graph Topological Features + ML Behavioral Features
-        ↓
-Isolation Forest Anomaly Detection
-        ↓
-Explainable Composite Risk Scoring (0–100)
-        ↓
-Grounded Evidence Generation + AI Investigator Case Briefing
-        ↓
-Structured Integration Contract for Member 1
++-----------------------------------------------------------------------------------+
+|                              CYGNUS AI PIPELINE                                   |
+|                                                                                   |
+|  Synthetic / Raw Transactions                                                     |
+|         │                                                                         |
+|         ▼                                                                         |
+|  [Security & Ingress Validation] (Zero-tolerance negative/NaN/Inf/cycles)         |
+|         │                                                                         |
+|         ├─────────────────────────────────────────┐                               |
+|         ▼                                         ▼                               |
+|  [NetworkX Directed MultiGraph]        [Behavioral Feature Extractor]             |
+|         │                                         │                               |
+|         ▼                                         │                               |
+|  [7 Topology Pattern Detectors]                   │                               |
+|  (Fan-In, Fan-Out, Cycles, Chains,                │                               |
+|   Rapid Flow, Structuring, Clusters)              │                               |
+|         │                                         │                               |
+|         ▼                                         │                               |
+|  [Graph Topological Features]                     │                               |
+|         │                                         │                               |
+|         └───────────────────┬─────────────────────┘                               |
+|                             ▼                                                     |
+|                 [Unified ML Feature Vector]                                       |
+|                             │                                                     |
+|                             ▼                                                     |
+|                 [Isolation Forest Model]                                          |
+|                             │                                                     |
+|                             ▼                                                     |
+|             [Explainable Multi-Signal Risk Scorer]                                |
+|                 (40% ML + 40% Graph + 20% Behavioral)                             |
+|                             │                                                     |
+|                             ▼                                                     |
+|               [Grounded Evidence Generation]                                      |
+|                             │                                                     |
+|                             ▼                                                     |
+|         [AI Investigator Case Briefings & Interactive UI]                         |
++-----------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Implemented Architecture & Modules
+## System Architecture
 
-### Member 2: Graph Algorithms & Network Detection
-- **`graph-engine/graph.py`**: Builds NetworkX directed graphs (`nx.DiGraph` & `nx.MultiDiGraph`) with account nodes and transaction edges preserving amounts, timestamps, and IDs.
-- **`graph-engine/patterns.py`**: Algorithmic detectors for 7 suspicious patterns:
-  1. **Fan-In**: Many distinct senders into one collector, with a burst window (most senders within 2 hours).
-  2. **Fan-Out**: One distributor to many distinct receivers, with the same burst window.
-  3. **Circular Flows**: Directed cycles ($A \to B \to C \to A$) that must happen **in time order** within 6 hours and return at least 50% of the value, so random peer-to-peer loops are not flagged.
-  4. **Transaction Chains**: Multi-hop linear paths ($\ge 3$ hops).
-  5. **Rapid Fund Movement**: An inflow of at least 1,000 followed by a comparable outflow (70% to 110%) within the hour.
-  6. **Structuring (smurfing)**: 3 or more transfers just under the reporting threshold (85% to 100% of 10,000) within 24 hours, flagging both the splitter and the collector.
-  7. **Coordinated Networks**: Dense interconnected clusters of 4 or more accounts.
-- **`graph-engine/features.py`**: Account-level graph feature extraction (`in_degree`, `out_degree`, `weighted_degrees`, `counterparties`, `cycle_count`, `chain_length`, `structuring_detected`, `near_threshold_tx_count`, `network_size`, `suspicious_neighbor_count`).
-- **`graph-engine/engine.py`**: Graph analysis orchestrator.
+The solution is partitioned into modular, independently scalable services:
 
-### Member 3: ML Anomaly Detection, Risk Scoring & Security
-- **`ml/validation.py`**: Rigorous data validation preventing negative/zero amounts, `NaN`, `Inf`, extreme values ($> 10^9$), invalid timestamps, self-transfers, duplicate transaction IDs, and malformed inputs.
-- **`ml/features.py`**: Behavioral feature extraction (transaction counts, inflows/outflows, velocity, ratios) and merged ML feature vector creation.
-- **`ml/model.py`**: Unsupervised anomaly detector using `IsolationForest` with reproducible `random_state`, calibrated $0-100$ scoring, prototype risk tiers (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and a transparent composite risk scorer ($40\%$ ML $+ 40\%$ Graph $+ 20\%$ Behavioral).
-- **`ml/inference.py`**: Complete pipeline runner with auditable, metric-grounded evidence generation.
-- **`ml/investigator.py`**: AI Investigator case briefing for every account (typology, summary, key findings, next steps, linked accounts), built only from the computed evidence, so it works offline.
-- **`backend/src/investigator.js`**: Optional Claude narrative. With `ANTHROPIC_API_KEY` set, `GET /api/investigate/:id` asks Claude to rewrite the briefing as an analyst narrative using only the pipeline's facts; without a key, or on any error, it returns the rule-based briefing.
-- **`data/synthetic/generator.py`**: Synthetic transaction generator supporting controlled scenarios (`NORMAL`, `FAN_IN`, `FAN_OUT`, `RAPID_MOVEMENT`, `CHAIN`, `CIRCULAR_FLOW`, `COORDINATED_NETWORK`, `STRUCTURING`, `MULE_RING`).
+```mermaid
+flowchart TD
+    subgraph Client ["Frontend Presentation Tier"]
+        UI["React 19 + Vite Dashboard\n(Interactive Network Graph, Metric Cards)"]
+    end
+
+    subgraph Gateway ["API & Integration Gateway"]
+        API["Express 5 REST Server\n(Port 5001 / 5000)"]
+        Adapter["Engine Adapter\n(backend/engine_adapter.py)"]
+    end
+
+    subgraph Analytics ["Core Analytic Engines"]
+        GraphEngine["Graph Analysis Engine\n(NetworkX - Port 8000)"]
+        MLEngine["ML Anomaly & Risk Engine\n(Isolation Forest - Port 8001)"]
+    end
+
+    subgraph LLM ["Intelligence Layer (Optional)"]
+        Claude["Anthropic Claude API\n(Narrative Investigator)"]
+    end
+
+    UI -->|HTTP / REST| API
+    API --> Adapter
+    Adapter --> GraphEngine
+    Adapter --> MLEngine
+    API -.->|Optional API Key| Claude
+```
 
 ---
 
-## 3. Getting Started & Commands
+## Core Detection Capabilities
+
+### 1. Graph Topological Pattern Detectors
+
+Cygnus AI enforces rigorous heuristic and temporal checks on the financial graph:
+
+| Pattern Typology | Algorithmic Definition & Heuristic Thresholds | Target Typology |
+| :--- | :--- | :--- |
+| **Fan-In** | High in-degree ($\ge 4$) with in-to-out ratio $\ge 2.0$, with senders clustered inside a **2-hour burst window**. | Aggregator / Collection Mule |
+| **Fan-Out** | Single source dispersing funds to multiple counterparties ($\ge 4$) with out-to-in ratio $\ge 2.0$ inside a **2-hour burst window**. | Distribution Hub / Splitter |
+| **Circular Flow** | Directed loops ($A \to B \to C \to A$) spanning 3 to 6 hops, strictly evaluated **in chronological order** within a **6-hour window**, returning $50\% \text{--} 110\%$ of initial value. | Layering & Round-tripping |
+| **Transaction Chain** | Linear paths of consecutive funds passing across $\ge 3$ intermediate accounts. | Flow Obfuscation / Pass-through |
+| **Rapid Movement** | Intermediary receives $\ge \$1,000$ and dispatches $70\% \text{--} 110\%$ of incoming volume to a third party within **1 hour**. | Pass-Through Mule Account |
+| **Structuring (Smurfing)** | $\ge 3$ transactions calibrated just below regulatory reporting limits ($85\% \text{--} 100\%$ of $\$10,000$ threshold) inside a **24-hour window**. | Bank Secrecy Act / CTR Evasion |
+| **Coordinated Network** | Dense interconnected clusters and strongly connected subgraphs ($\ge 4$ accounts, edge density $\ge 0.40$). | Organized Financial Crime Ring |
+
+---
+
+### 2. Machine Learning Anomaly Engine
+
+- **Model**: `IsolationForest` configured with deterministic initialization (`random_state=42`) for 100% reproducible scoring across runs.
+- **Input Feature Space**: Merged multidimensional matrix capturing:
+  - *Graph Topology*: In-degree, out-degree, weighted volumes, cycle participation, chain lengths, counterparty diversity.
+  - *Behavioral Velocity*: Inflow/outflow volumes, transaction frequency, velocity, ratio differentials.
+- **Normalization**: Min-max calibrated anomaly score mapping anomaly decisions directly into a uniform risk spectrum.
+
+---
+
+### 3. Explainable Composite Risk Scoring
+
+To prevent "black-box" decision-making, Cygnus AI computes a transparent, auditable composite risk score ($0 \text{--} 100$):
+
+$$\text{Composite Risk} = 0.40 \times \text{Score}_{\text{ML}} + 0.40 \times \text{Score}_{\text{Graph}} + 0.20 \times \text{Score}_{\text{Behavioral}}$$
+
+#### Risk Tiers & Actions:
+- **LOW ($0 \text{--} 39$)**: Standard operational behavior; routine automated monitoring.
+- **MEDIUM ($40 \text{--} 59$)**: Minor deviations or low-frequency anomalous activity.
+- **HIGH ($60 \text{--} 79$)**: Multiple corroborating structural or behavioral indicators.
+- **CRITICAL ($80 \text{--} 100$)**: High-confidence coordinated evasion (e.g., mule ring, smurfing, circular flow); immediate SAR filing review recommended.
+
+---
+
+### 4. AI Investigator & Narrative Synthesis
+
+- **Deterministic Rule Briefing**: Automatically produces key findings, detected typologies, evidence tables, linked accounts, and recommended regulatory actions without requiring external LLM dependencies.
+- **Enhanced LLM Analyst Briefings (Optional)**: When configured with `ANTHROPIC_API_KEY`, the Express backend invokes Claude to synthesize natural-language investigative dossiers strictly grounded in the pipeline's factual output.
+
+---
+
+## Interactive Full-Stack Dashboard
+
+The visual investigation platform provides financial compliance teams with immediate situational awareness:
+
+- **Network Graph Visualizer**: Real-time canvas representing nodes, directed edges, risk-weighted node colors, and multi-hop counterparty exploration.
+- **Account Intelligence Panel**: In-depth transaction breakdown, incoming vs. outgoing ratio charts, and algorithmic indicators.
+- **Risk Score Explainer**: Transparent breakdown of ML, Graph, and Behavioral contributions.
+- **Live Pipeline Simulator**: Submit custom synthetic batches or single JSON payloads to evaluate predictions dynamically.
+- **Resilient Offline Fallback**: If backend services are unreachable, the UI seamlessly falls back to precomputed states in `public/data/initial_state.json`.
+
+---
+
+## Quick Start Guide
 
 ### Prerequisites
-- Python 3.10+ (tested on Python 3.14)
-- Packages: `networkx`, `pandas`, `numpy`, `scikit-learn`, `pytest`
+- **Python**: 3.10 or higher
+- **Node.js**: v20 or higher
+- **Docker & Docker Compose**: Recommended for instant setup
 
-### Installation
+---
+
+### Option A: Full-Stack with Docker Compose (Recommended)
+
+Start the frontend, backend API, Graph Engine, and ML Engine with a single command:
+
+```bash
+# Clone the repository
+git clone https://github.com/ManamiMayoki/CPC_DIU_HACKATHON_2026.git
+cd CPC_DIU_HACKATHON_2026
+
+# Launch all microservices
+docker compose up --build
+```
+
+#### Running Services:
+| Component | Service | Local Address |
+| :--- | :--- | :--- |
+| **Web Dashboard** | Frontend | [http://localhost:3001](http://localhost:3001) |
+| **Integration API** | Backend Gateway | [http://localhost:5001](http://localhost:5001) |
+| **Graph Analysis Engine** | Fast Microservice | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| **ML Inference Engine** | Fast Microservice | [http://localhost:8001/docs](http://localhost:8001/docs) |
+
+---
+
+### Option B: Local Modular Setup
+
+#### 1. Setup Python Environment
 ```bash
 pip install networkx pandas numpy scikit-learn pytest
 ```
 
-### 1. Generate Synthetic Transactions
+#### 2. Generate Synthetic Datasets
 ```bash
 python data/synthetic/generator.py
 ```
-*Outputs `data/synthetic/transactions_sample.json` containing 190 synthetic transactions across 73 accounts covering normal and anomalous scenarios.*
+*Creates `data/synthetic/transactions_sample.json` simulating 190 transactions across 73 accounts.*
 
-### 2. Run Graph Analysis Engine
+#### 3. Run Forensic Analytics
 ```bash
+# Execute standalone Graph Topology Engine
 python graph-engine/engine.py
-```
-*Constructs the NetworkX directed graph, runs all 7 topology detectors, extracts graph features, and prints summary metrics.*
 
-### 3. Run Full ML & Risk Pipeline
-```bash
+# Execute full ML Inference and Risk Scoring Pipeline
 python ml/inference.py
-```
-*Executes the complete pipeline: validation $\to$ graph analysis $\to$ feature engineering $\to$ Isolation Forest $\to$ risk scoring $\to$ evidence generation.*
 
-### 4. Run Synthetic Scenario Benchmark Evaluation
-```bash
+# Run Scenario Benchmark Evaluation
 python evaluate_benchmark.py
 ```
-*Evaluates detection and risk scoring across all 9 controlled scenarios: NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING.*
 
-### 5. Run Complete Pytest Suite
+#### 4. Run Backend & Frontend Locally
 ```bash
-python -m pytest tests/ -v
-```
-*Executes 50 unit, integration, benchmark, security, and regression tests.*
+# Terminal 1: Backend
+cd backend
+npm install
+npm run dev
 
-### 6. Run the Full Stack with Docker
-```bash
-docker compose up --build        # Docker Compose v2
-docker-compose up --build        # older Compose v1
+# Terminal 2: Frontend
+cd frontend
+npm install
+npm run dev
 ```
-*Starts the dashboard on port 3001, the backend API on 5001, the graph engine on 8000 (`/docs`, `/health`, `POST /analyze`) and the ML engine on 8001 (`/docs`, `/health`, `POST /pipeline`). The frontend proxies `/api` to the backend.*
 
-*Optional: `export ANTHROPIC_API_KEY=...` before starting to let Claude write AI Investigator narratives. Never commit the key; without it the dashboard uses the rule-based briefing.*
-
-### 7. Regenerate the Dashboard's Offline Data
-```bash
-python data/synthetic/generator.py
-python backend/engine_adapter.py --out frontend/public/data/initial_state.json
-```
-*The dashboard falls back to this file when the backend is unreachable, so regenerate it after changing detection or scoring logic.*
+The frontend will be available at `http://localhost:5173`.
 
 ---
 
-## 4. Test Suite Coverage
+## Cloud & Vercel Deployment
 
-| Test File | Focus Area | Test Count | Status |
-| :--- | :--- | :--- | :--- |
-| **`tests/test_graph.py`** | Graph construction, node/edge attributes, timestamp robustness, Fan-In, Fan-Out, Circular Flows, Chains, Rapid Movement, Coordinated Networks, Graph Features | 13 tests | **PASSED** |
-| **`tests/test_ml.py`** | Behavioral features, combined vector merging, Isolation Forest fitting, anomaly scores, normalized risk scores, reproducibility, risk levels, evidence generation | 8 tests | **PASSED** |
-| **`tests/test_scenarios_benchmark.py`** | Controlled scenario evaluations (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT, CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING), deterministic reproducibility, [0, 100] bounds | 11 tests | **PASSED** |
-| **`tests/test_security.py`** | Missing fields, invalid account IDs, self-transfers, negative amounts, zero amounts, NaN/Inf, extreme value limits, invalid timestamps, malformed types, duplicate IDs, empty datasets, strict exception raising | 12 tests | **PASSED** |
-| **`tests/test_regressions.py`** | Mixed-timezone timestamps, identical risk scores across Python hash seeds | 2 tests | **PASSED** |
-| **`tests/test_upgrade.py`** | Structuring detector, rejection of out-of-order loops, AI Investigator briefing built from evidence | 4 tests | **PASSED** |
-| **Total** | Full Layer Test Coverage | **50 tests** | **100% PASSED** |
+The frontend includes full out-of-the-box support for [Vercel](https://vercel.com):
 
+1. **Import Project** into Vercel and set **Root Directory** to `frontend`.
+2. **Framework Preset** automatically detects as `Vite`.
+3. **Environment Variables**:
+   - Set `VITE_API_URL` to your live backend endpoint (e.g., `https://api.yourdomain.com/api`).
+   - If deploying as a standalone prototype, leave `VITE_API_URL` blank; the dashboard will automatically run in zero-config offline mode using the pre-computed synthetic dataset.
 
 ---
 
-## 5. Member 1 Integration Contract
+## REST API & Integration Contract
 
-Member 1 can consume the entire pipeline with a single import:
+The integration server exposes standardized REST endpoints:
 
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Service health status and account count. |
+| `GET` | `/api/pipeline` | Complete network graph, risk distributions, and account metrics. |
+| `GET` | `/api/network/:accountId?hops=1` | Dynamic neighborhood subgraph for a given entity. |
+| `GET` | `/api/accounts/:accountId` | Detailed behavioral profile and evidence record. |
+| `GET` | `/api/investigate/:accountId` | Rule-based or LLM-synthesized narrative briefing. |
+| `POST` | `/api/pipeline/run` | Execute end-to-end pipeline on arbitrary transaction batches. |
+
+Python developers can also consume the pipeline directly:
 ```python
 from ml.inference import run_pipeline
 
+# transactions = list of dicts with sender_id, receiver_id, amount, timestamp
 results = run_pipeline(transactions)
-# Returns structured dictionary matching docs/api-contract.md
 ```
 
-Detailed JSON schema, payload specifications, and sample responses are documented in [docs/api-contract.md](docs/api-contract.md).  
-Pipeline architecture and boundaries are documented in [docs/architecture.md](docs/architecture.md).
+Refer to [`docs/api-contract.md`](docs/api-contract.md) and [`docs/architecture.md`](docs/architecture.md) for complete schema specifications.
 
 ---
 
+## Comprehensive Test Suite & Benchmarks
+
+The codebase includes **50 automated tests** covering security boundaries, regressions, topological algorithms, and ML determinism:
+
+```bash
+python -m pytest tests/ -v
+```
+
+| Test Suite | Scope & Verifications | Test Count | Status |
+| :--- | :--- | :---: | :---: |
+| [`tests/test_graph.py`](tests/test_graph.py) | Graph integrity, node/edge attributes, Fan-In/Out, cycles, chains, rapid movement, clusters | **13** | Passed |
+| [`tests/test_ml.py`](tests/test_ml.py) | Behavioral features, Isolation Forest training, normalization, evidence generation | **8** | Passed |
+| [`tests/test_scenarios_benchmark.py`](tests/test_scenarios_benchmark.py) | Controlled scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID, CHAIN, CYCLES, STRUCTURING, MULE_RING) | **11** | Passed |
+| [`tests/test_security.py`](tests/test_security.py) | Ingress validation, self-transfers, negative amounts, NaN/Inf, timestamp parsing, duplicate IDs | **12** | Passed |
+| [`tests/test_regressions.py`](tests/test_regressions.py) | Timezone invariance, cross-seed stability, deterministic sorting | **2** | Passed |
+| [`tests/test_upgrade.py`](tests/test_upgrade.py) | Smurfing detector validation, out-of-order loop rejection, offline briefing structure | **4** | Passed |
+| **Total Test Coverage** | **Complete Engine & Security Validation** | **50 / 50** | **100% Passed** |
+
+---
+
+## Project Directory Structure
+
+```
+.
+├── backend/                  # Node.js / Express API gateway & Python adapter
+│   ├── src/
+│   │   ├── server.js         # REST endpoints & caching layer
+│   │   └── investigator.js   # Claude AI case narrative generator
+│   └── engine_adapter.py     # High-performance CLI bridge to Python core
+├── frontend/                 # React 19 + Vite + Tailwind CSS dashboard
+│   ├── src/
+│   │   ├── components/       # Graph visualizer, RiskScoreCard, AIInvestigator
+│   │   └── services/api.js   # API client with automatic offline fallback
+│   ├── vercel.json           # Vercel deployment & SPA routing rewrites
+│   └── .env.example          # Environment variable template
+├── graph-engine/             # NetworkX graph topology & pattern detectors
+│   ├── graph.py              # Directed graph construction
+│   ├── patterns.py           # 7 suspicious network pattern detectors
+│   ├── features.py           # Topological feature engineering
+│   └── engine.py             # Standalone graph analysis orchestrator
+├── ml/                       # Machine learning & forensic risk scoring
+│   ├── validation.py         # Ingress data sanitizer & security constraints
+│   ├── features.py           # Transactional & behavioral feature extraction
+│   ├── model.py              # Isolation Forest & composite risk scoring
+│   ├── inference.py          # Unified pipeline runner & evidence generator
+│   └── investigator.py       # Deterministic rule-based case briefing
+├── data/                     # Synthetic transaction generators & samples
+├── docs/                     # API contracts & technical architecture specs
+├── tests/                    # Pytest suite (50 tests covering all layers)
+├── docker-compose.yml        # Multi-container orchestration
+└── evaluate_benchmark.py     # Scenario detection benchmark script
+```
+
+---
+
+## Ethical Disclaimer
+
+This repository is developed for algorithmic research, benchmarking, and demonstration purposes on synthetic transaction datasets. The topological patterns, risk scores, and classifications generated by this system do **not** constitute legal evidence of financial crime and are designed to assist human compliance analysts in forensic triage, not replace formal regulatory oversight.
 ## 6. Disclaimer
 This software is a synthetic-data hackathon prototype for algorithm research and demonstration. The topological patterns, risk scores, and risk tiers do **NOT** prove financial crime, do **NOT** constitute legal or regulatory evidence, and do **NOT** represent official banking compliance standards.
 
