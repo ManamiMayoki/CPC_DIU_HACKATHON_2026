@@ -12,13 +12,22 @@ import TransactionLedger from './components/TransactionLedger';
 import DemoScenarioBar from './components/DemoScenarioBar';
 import ArchitectureModal from './components/ArchitectureModal';
 import { LoadingState, ErrorState } from './components/LoadingErrorStates';
-import { fetchInitialData } from './services/api';
+import LoginScreen from './components/LoginScreen';
+import CasePanel from './components/CasePanel';
+import CaseManagement from './components/CaseManagement';
+import AuditLog from './components/AuditLog';
+import ModelEvaluation from './components/ModelEvaluation';
+import { fetchInitialData, getSession, setUnauthorizedHandler, signOut } from './services/api';
 import { Shield, Sparkles, Layers, ArrowRight } from 'lucide-react';
 
 export default function App() {
+  const [user, setUser] = useState(() => getSession()?.user || null);
+  // Read-only mode with the saved dataset, for when the backend is down
+  const [offlinePreview, setOfflinePreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [focusCaseId, setFocusCaseId] = useState(null);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedAccountId, setSelectedAccountId] = useState('ACC_MULE_HUB');
@@ -47,11 +56,31 @@ export default function App() {
     }
   };
 
+  const signedIn = Boolean(user) || offlinePreview;
+
   useEffect(() => {
-    // One-time data load on mount; loadData sets loading/data/error state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
+    setUnauthorizedHandler(() => setUser(null));
   }, []);
+
+  useEffect(() => {
+    // Load once the user is signed in; loadData sets loading/data/error state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (signedIn) loadData();
+  }, [signedIn]);
+
+  const handleSignOut = () => {
+    signOut();
+    setUser(null);
+    setOfflinePreview(false);
+    setData(null);
+    setActiveTab('overview');
+  };
+
+  const handleOpenCaseView = (caseId) => {
+    setFocusCaseId(caseId);
+    setActiveTab('cases');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Handle Account Selection for Investigation
   const handleSelectAccount = (accountId) => {
@@ -79,6 +108,10 @@ export default function App() {
     setActiveTab('investigate');
   };
 
+  if (!signedIn) {
+    return <LoginScreen onSignedIn={setUser} onOfflinePreview={() => setOfflinePreview(true)} />;
+  }
+
   if (loading) {
     return <LoadingState message="Initializing Cygnus AI Detection Pipeline..." />;
   }
@@ -100,6 +133,8 @@ export default function App() {
         onSearchAccount={handleInvestigateAccount}
         demoScenarios={data?.demo_scenarios || []}
         onSelectScenario={handleSelectScenario}
+        user={user}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Content Area */}
@@ -256,6 +291,26 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'investigate' && user && selectedAccount && (
+          <div style={{ maxWidth: '1480px', margin: '24px auto 0', padding: '0 24px' }}>
+            <CasePanel
+              key={selectedAccount.account_id}
+              account={selectedAccount}
+              user={user}
+              onOpenCaseView={handleOpenCaseView}
+            />
+          </div>
+        )}
+
+        {/* Case management, audit log and model evaluation */}
+        {activeTab === 'cases' && (
+          user
+            ? <CaseManagement key={focusCaseId || 'queue'} user={user} initialCaseId={focusCaseId} onInvestigateAccount={handleInvestigateAccount} />
+            : <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>Cases need the backend. Sign in to use them.</div>
+        )}
+        {activeTab === 'audit' && user?.permissions?.includes('audit:read') && <AuditLog />}
+        {activeTab === 'evaluation' && <ModelEvaluation />}
+
         {/* VIEW 3: High Risk Accounts Directory */}
         {activeTab === 'high-risk' && (
           <HighRiskAccounts
@@ -328,7 +383,7 @@ export default function App() {
           </div>
 
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-            CPC DIU HACKATHON 2026 • MEMBER 1 + 2 + 3 INTEGRATED • ZERO SYNTHETIC HALLUCINATIONS
+            AI DEV FEST 2026 • SYNTHETIC DATA • HUMAN-IN-THE-LOOP DECISIONS
           </div>
         </div>
       </footer>

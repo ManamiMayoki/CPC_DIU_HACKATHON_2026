@@ -97,6 +97,34 @@ def generate_account_evidence(
         else:
             evidence.append("Structuring detected: repeated transactions kept just under the monitoring threshold.")
 
+    if "location_anomaly" in active_patterns:
+        d = pattern_details.get("location_anomaly", {})
+        usual = ", ".join(d.get("usual_areas", [])) or "elsewhere"
+        evidence.append(
+            f"Possible account takeover: the wallet normally transacts from {usual} but suddenly moved "
+            f"BDT {d.get('outflow_24h', 0):,.0f} in 24 hours from risk area {d.get('risk_area')} "
+            f"({'; '.join(d.get('signals', [])[1:]) or 'unusual for this customer'}). Protective alert: confirm with the customer."
+        )
+    if "takeover_collector" in active_patterns:
+        d = pattern_details.get("takeover_collector", {})
+        evidence.append(
+            f"Takeover collector: received BDT {d.get('amount_collected', 0):,.0f} from {d.get('victim_count')} wallets "
+            f"during suspected account takeovers in {', '.join(d.get('risk_areas', []))}."
+        )
+    if "hundi_operator" in active_patterns:
+        d = pattern_details.get("hundi_operator", {})
+        evidence.append(
+            f"Hundi-style payout: {d.get('informal_inflow_count')} large informal transfers (BDT {d.get('informal_inflow_total', 0):,.0f}) "
+            f"from {len(d.get('funders', []))} funder(s) were paid out to {d.get('beneficiary_count')} beneficiaries over {d.get('cycles')} cycles; "
+            f"{round(100 * d.get('repeat_beneficiary_share', 0))}% of beneficiaries were paid in more than one cycle. "
+            f"No licensed inward-remittance or distributor funding is involved."
+        )
+    if "hundi_funder" in active_patterns:
+        d = pattern_details.get("hundi_funder", {})
+        evidence.append(
+            f"Hundi funder: sent {d.get('transfers')} large transfers (BDT {d.get('amount', 0):,.0f}) to suspected hundi operator {d.get('operator')}."
+        )
+
     if "coordinated_network" in active_patterns:
         evidence.append(
             "Coordinated network membership: account is part of a densely interconnected transaction cluster."
@@ -159,8 +187,18 @@ def run_pipeline(
     contamination: float = 0.1,
     random_state: int = 42,
     strict_validation: bool = False,
+    temporal: Optional[bool] = None,
+    use_supervised: bool = True,
+    account_tiers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Complete execution pipeline returning the structured contract for Member 1.
+
+    temporal picks how circular flows and chains are found: None = by graph size,
+    False = exhaustive search on the static graph, True = time-ordered flow tracing.
+
+    use_supervised adds the trained classifier (ml.supervised): the ML component of the score
+    becomes the stronger of the IsolationForest anomaly score and the classifier's probability.
+    account_tiers maps account_id -> personal | agent | merchant (KYC account type).
 
     Returns:
         Structured output containing:
@@ -190,10 +228,18 @@ def run_pipeline(
     valid_txs = val_res.valid_transactions
 
     # 2. Graph Engine Analysis
-    graph_engine = GraphEngine(strict_validation=False)
+    graph_engine = GraphEngine(strict_validation=False, temporal=temporal)
     graph_result = graph_engine.analyze(valid_txs)
     graph_summary = graph_result.get("graph_summary", {})
     patterns = graph_result.get("patterns", {})
+
+    # 2b. Context detectors on the transaction stream (risk-area takeover, hundi networks)
+    from data.synthetic.profiles import infer_tier
+    from ml.context_risk import run_context_detectors
+
+    all_accounts = {tx["sender_id"] for tx in valid_txs} | {tx["receiver_id"] for tx in valid_txs}
+    tiers = account_tiers or {str(acc): infer_tier(str(acc)) for acc in all_accounts}
+    patterns = {**patterns, **run_context_detectors(valid_txs, tiers)}
 
     # Extract account pattern mapping
     # account_id -> list of pattern names
@@ -235,6 +281,26 @@ def run_pipeline(
     detector.fit(combined_features_df)
     ml_scores_df = detector.compute_anomaly_scores(combined_features_df)
 
+    # 4b. Supervised classifier trained on the labelled synthetic MFS networks. Optional: if the
+    # model cannot be loaded the pipeline falls back to the unsupervised score alone.
+    supervised_probs: Dict[str, float] = {}
+    supervised_drivers: Dict[str, List[Dict[str, Any]]] = {}
+    supervised_threshold: Optional[float] = None
+    if use_supervised:
+        try:
+            from ml.feature_store import build_account_features
+            from ml.supervised import explain_accounts, load_or_train, score_accounts
+
+            bundle = load_or_train()
+            store = build_account_features(valid_txs, tiers)
+            probs = score_accounts(store, bundle)
+            supervised_probs = {str(k): float(v) for k, v in probs.items()}
+            supervised_threshold = float(bundle["threshold"])
+            flagged = [acc for acc, p in supervised_probs.items() if p >= supervised_threshold]
+            supervised_drivers = explain_accounts(store, flagged[:500], bundle)
+        except Exception as exc:  # pragma: no cover - defensive: scoring must never take the API down
+            print(f"[Cygnus ML] supervised model unavailable, using unsupervised score only: {exc}", file=sys.stderr)
+
     # 5. Composite Explainable Risk Scoring (Population-Calibrated)
     scorer = ExplainableRiskScorer(feature_df=combined_features_df)
     account_reports: List[Dict[str, Any]] = []
@@ -242,8 +308,19 @@ def run_pipeline(
 
     for acc_id in combined_features_df.index:
         feature_row = combined_features_df.loc[acc_id].to_dict()
-        ml_score = float(ml_scores_df.loc[acc_id, "ml_anomaly_score"])
+        anomaly_score = float(ml_scores_df.loc[acc_id, "ml_anomaly_score"])
         is_anomaly = bool(ml_scores_df.loc[acc_id, "is_anomaly"])
+        supervised_prob = supervised_probs.get(str(acc_id))
+        account_tier = tiers.get(str(acc_id), "personal")
+        # ML component: the stronger of "unusual" (IsolationForest) and "looks like a known typology"
+        # (classifier). Agents and merchants are statistical outliers by nature of their volume, so for
+        # those tiers only the classifier counts once it is available.
+        if supervised_prob is None:
+            ml_score = anomaly_score
+        elif account_tier in ExplainableRiskScorer.BUSINESS_TIERS:
+            ml_score = round(100.0 * supervised_prob, 2)
+        else:
+            ml_score = max(anomaly_score, round(100.0 * supervised_prob, 2))
 
         active_pats = account_patterns.get(acc_id, [])
         pat_flags = {p: True for p in active_pats}
@@ -254,9 +331,13 @@ def run_pipeline(
             is_ml_anomaly=is_anomaly,
             feature_row=feature_row,
             pattern_flags=pat_flags,
+            account_tier=account_tier if use_supervised else "personal",
         )
 
         risk_dist[risk_tier] = risk_dist.get(risk_tier, 0) + 1
+        breakdown["anomaly_score"] = round(anomaly_score, 2)
+        if supervised_prob is not None:
+            breakdown["supervised_probability"] = round(supervised_prob, 4)
 
         # Evidence generation
         evidence_list = generate_account_evidence(
@@ -267,6 +348,13 @@ def run_pipeline(
             ml_score=ml_score,
             pattern_details=pattern_detail_map.get(acc_id, {}),
         )
+        drivers = supervised_drivers.get(str(acc_id), [])
+        if supervised_prob is not None and supervised_threshold is not None and supervised_prob >= supervised_threshold:
+            why = "; ".join(f"{d['label']} = {d['value']:g} (typical {d['typical']:g})" for d in drivers)
+            sentence = f"Trained classifier rates this account {supervised_prob * 100:.0f}% similar to known laundering typologies"
+            evidence_list.insert(0, f"{sentence}. Main drivers: {why}." if why else f"{sentence}.")
+            if evidence_list[-1].startswith("Normal transactional behavior"):
+                evidence_list.pop()
 
         # Slice relevant sub-features for the contract
         graph_feats = {
@@ -320,6 +408,9 @@ def run_pipeline(
             "evidence": evidence_list,
             "graph_features": graph_feats,
             "ml_features": ml_feats,
+            "account_tier": account_tier,
+            "supervised_probability": None if supervised_prob is None else round(supervised_prob, 4),
+            "model_drivers": drivers,
         }
         report["investigation"] = build_investigation(
             report, feature_row, pattern_detail_map.get(acc_id, {})
@@ -341,6 +432,12 @@ def run_pipeline(
         "graph_summary": graph_summary,
         "risk_distribution": risk_dist,
         "accounts": account_reports,
+        "models": {
+            "anomaly": "IsolationForest (unsupervised)",
+            "supervised": "Gradient boosting on graph + temporal features" if supervised_probs else None,
+            "supervised_threshold": supervised_threshold,
+            "detection_mode": graph_result.get("detection_mode"),
+        },
     }
 
 

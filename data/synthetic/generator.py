@@ -2,7 +2,7 @@
 
 NOTE: This generator produces synthetic test transactions for graph and ML algorithm
 evaluation. These synthetic scenarios (NORMAL, FAN_IN, FAN_OUT, RAPID_MOVEMENT,
-CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING) are testing artifacts and do NOT represent
+CHAIN, CIRCULAR_FLOW, COORDINATED_NETWORK, STRUCTURING, MULE_RING, HUNDI, ACCOUNT_TAKEOVER) are testing artifacts and do NOT represent
 real-world financial-crime labels, banking definitions, or proof of illegal activity.
 """
 
@@ -335,6 +335,78 @@ class SyntheticDataGenerator:
         transactions.append(self._tx(cashout, hub, mule_received[mules[0]][0] * 0.9, current_time))
         return transactions
 
+    def generate_hundi_scenario(
+        self,
+        agent: str = "ACC_HUNDI_AGENT",
+        num_funders: int = 2,
+        num_families: int = 6,
+        base_time: Optional[datetime.datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Hundi (informal remittance) run through an agent wallet, repeated a week apart.
+
+        Local funders send large informal transfers to the agent; within hours the agent pays
+        the same families. No licensed inward-remittance transaction is involved.
+        """
+        if base_time is None:
+            base_time = datetime.datetime(2026, 3, 2, 10, 0, 0)
+        funders = [f"ACC_HUNDI_FUNDER_{i + 1:02d}" for i in range(num_funders)]
+        families = [f"ACC_HUNDI_FAMILY_{i + 1:02d}" for i in range(num_families)]
+        transactions: List[Dict[str, Any]] = []
+        for cycle in range(2):
+            start = base_time + datetime.timedelta(days=7 * cycle)
+            pool = 0.0
+            for funder in funders:
+                for k in range(2):
+                    amount = self.rng.uniform(18000.0, 24000.0)
+                    pool += amount
+                    when = start + datetime.timedelta(minutes=self.rng.randint(0, 90) + 45 * k)
+                    transactions.append({**self._tx(funder, agent, amount, when), "tx_type": "send_money",
+                                         "location": "Zone-05", "device_id": f"DEV-{funder[4:]}-1"})
+            share = pool * 0.95 / num_families
+            for family in families:
+                when = start + datetime.timedelta(hours=3, minutes=self.rng.randint(0, 240))
+                transactions.append({**self._tx(agent, family, share * self.rng.uniform(0.85, 1.15), when), "tx_type": "cash_in",
+                                     "location": "Zone-05", "device_id": f"DEV-{agent[4:]}-1"})
+        return transactions
+
+    def generate_takeover_scenario(
+        self,
+        collector: str = "ACC_TKO_COLLECTOR",
+        num_victims: int = 3,
+        risk_area: str = "Zone-13",
+        base_time: Optional[datetime.datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Risk-area account takeover: wallets that always transact from their home area are
+        suddenly emptied from a risk area on a new handset, into one collector wallet.
+
+        ACC_TKO_RESIDENT lives in the risk area and transacts there all the time; it must not be flagged.
+        """
+        if base_time is None:
+            base_time = datetime.datetime(2026, 3, 2, 11, 0, 0)
+        transactions: List[Dict[str, Any]] = []
+
+        def add(sender, receiver, amount, when, tx_type, area, device):
+            transactions.append({**self._tx(sender, receiver, amount, when), "tx_type": tx_type, "location": area, "device_id": device})
+
+        takeover_day = base_time + datetime.timedelta(days=4)
+        for i in range(num_victims):
+            victim = f"ACC_TKO_VICTIM_{i + 1:02d}"
+            home, own = f"Zone-0{i + 2}", f"DEV-{victim[4:]}-1"
+            for day in range(4):  # ordinary history from the home area
+                when = base_time + datetime.timedelta(days=day, minutes=self.rng.randint(0, 300))
+                add(victim, "ACC_TKO_SHOP", self.rng.uniform(150.0, 900.0), when, "payment", home, own)
+            when = takeover_day + datetime.timedelta(minutes=20 * i)
+            for _ in range(2):
+                when += datetime.timedelta(minutes=self.rng.randint(4, 15))
+                amount = self.rng.uniform(7000.0, 12000.0)
+                add(victim, collector, amount, when, "send_money", risk_area, f"DEV-{victim[4:]}-X7")
+                add(collector, "ACC_TKO_AGENT", amount * 0.97, when + datetime.timedelta(minutes=self.rng.randint(5, 20)),
+                    "cash_out", risk_area, f"DEV-{collector[4:]}-1")
+        for day in range(5):  # a customer who lives in the risk area
+            when = base_time + datetime.timedelta(days=day, minutes=self.rng.randint(0, 300))
+            add("ACC_TKO_RESIDENT", "ACC_TKO_SHOP", self.rng.uniform(200.0, 1200.0), when, "payment", risk_area, "DEV-TKO_RESIDENT-1")
+        return transactions
+
     def generate_comprehensive_dataset(self) -> List[Dict[str, Any]]:
         """Generates a complete dataset combining normal transactions and each controlled scenario."""
         all_tx: List[Dict[str, Any]] = []
@@ -348,6 +420,9 @@ class SyntheticDataGenerator:
         # Added after the original scenarios so their random draws (and transactions) are unchanged
         all_tx.extend(self.generate_structuring_scenario())
         all_tx.extend(self.generate_mule_ring_scenario())
+        # Phase 2 context scenarios (carry tx_type, location and device_id)
+        all_tx.extend(self.generate_hundi_scenario())
+        all_tx.extend(self.generate_takeover_scenario())
 
         # Sort chronologically
         all_tx.sort(key=lambda x: x["timestamp"])

@@ -31,6 +31,7 @@ from ml.inference import run_pipeline
 from ml.validation import validate_transactions
 from graph import build_transaction_graph, get_graph_summary
 from data.synthetic.generator import SyntheticDataGenerator
+from data.synthetic.profiles import build_profiles
 
 
 DEFAULT_SAMPLE_PATH = os.path.join(DATA_DIR, "transactions_sample.json")
@@ -138,6 +139,26 @@ def get_demo_scenarios_metadata() -> List[Dict[str, Any]]:
             "badge_color": "red",
             "description": "8 feeder wallets -> collector hub -> 4 mule wallets -> cash-out agent -> back to the hub, all within about two hours.",
             "benchmark_note": "Fan-in, structuring, rapid movement, chain and a time-ordered loop combine into a CRITICAL score."
+        },
+        {
+            "id": "HUNDI",
+            "name": "Hundi Agent (Informal Remittance)",
+            "target_account": "ACC_HUNDI_AGENT",
+            "expected_pattern": "hundi_operator",
+            "severity": "HIGH",
+            "badge_color": "red",
+            "description": "Two local funders send large informal transfers to an agent, who pays the same six families within hours, two weeks running.",
+            "benchmark_note": "Flagged on recurrence and a stable beneficiary set; licensed inward remittance and distributor float are excluded."
+        },
+        {
+            "id": "ACCOUNT_TAKEOVER",
+            "name": "Risk-Area Account Takeover",
+            "target_account": "ACC_TKO_COLLECTOR",
+            "expected_pattern": "takeover_collector",
+            "severity": "HIGH",
+            "badge_color": "red",
+            "description": "Three wallets that always transact from their home area are emptied from a risk area on new handsets into one collector.",
+            "benchmark_note": "Scored against each customer's own baseline: ACC_TKO_RESIDENT, who lives in the risk area, is not flagged."
         },
     ]
 
@@ -288,6 +309,38 @@ def build_enhanced_payload(
             "description": "Several transactions kept just under the 10,000 threshold within 24 hours to avoid monitoring.",
             "severity": "HIGH",
             "badge_color": "amber",
+        },
+        {
+            "id": "hundi_operator",
+            "name": "Hundi Operator",
+            "title": "Hundi Payout",
+            "description": "Large informal transfers from a few funders paid out to the same beneficiaries cycle after cycle, outside licensed remittance.",
+            "severity": "CRITICAL",
+            "badge_color": "red",
+        },
+        {
+            "id": "hundi_funder",
+            "name": "Hundi Funder",
+            "title": "Hundi Funder",
+            "description": "Repeatedly sends large transfers to a suspected hundi operator.",
+            "severity": "HIGH",
+            "badge_color": "amber",
+        },
+        {
+            "id": "location_anomaly",
+            "name": "Risk-Area Takeover",
+            "title": "Possible Takeover",
+            "description": "A wallet suddenly active from a listed risk area, outside the customer's own baseline, with a new handset or a fast drain. Protective alert.",
+            "severity": "HIGH",
+            "badge_color": "amber",
+        },
+        {
+            "id": "takeover_collector",
+            "name": "Takeover Collector",
+            "title": "Takeover Collector",
+            "description": "Collects money from several wallets during suspected account takeovers.",
+            "severity": "CRITICAL",
+            "badge_color": "red",
         },
         {
             "id": "coordinated_network",
@@ -504,7 +557,8 @@ def get_account_subgraph(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cygnus AI Integration Adapter")
-    parser.add_argument("--action", choices=["analyze", "account", "scenarios", "summary"], default="analyze")
+    parser.add_argument("--action", choices=["analyze", "account", "scenarios", "summary", "profiles"], default="analyze")
+    parser.add_argument("--with-profiles", action="store_true", help="Attach synthetic KYC profiles (server-side use only)")
     parser.add_argument("--account", type=str, help="Target account ID")
     parser.add_argument("--hops", type=int, default=1, help="Ego network hops")
     parser.add_argument("--out", type=str, help="Output JSON path")
@@ -527,8 +581,13 @@ def main() -> None:
             "risk_distribution": full["risk_distribution"],
             "patterns_summary": full["patterns_summary"],
         }
+    elif args.action == "profiles":
+        txs = validate_transactions(transactions or load_sample_transactions(), strict=False).valid_transactions
+        output = build_profiles(a for tx in txs for a in (tx["sender_id"], tx["receiver_id"]))
     else:
         output = analyze_dataset(transactions)
+        if args.with_profiles:
+            output["account_profiles"] = build_profiles(n["id"] for n in output["nodes"])
 
     json_str = json.dumps(output, indent=2)
     if args.out:

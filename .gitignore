@@ -26,3 +26,8 @@ Thumbs.db
 # Logs and temp files
 *.log
 data/synthetic/temp_custom_tx.json
+
+# Trained model cache (rebuilt by `python -m ml.supervised`) and runtime data
+ml/artifacts/
+backend/data/
+docs/evaluation/phase2_results_quick.json

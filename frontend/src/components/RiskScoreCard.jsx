@@ -178,7 +178,7 @@ export default function RiskScoreCard({ account }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Cpu size={14} color="#8B5CF6" />
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#FFFFFF' }}>
-                Isolation Forest ML Component
+                ML Component (classifier + anomaly)
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 (40% Weight)

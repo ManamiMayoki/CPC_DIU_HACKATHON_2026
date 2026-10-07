@@ -189,7 +189,7 @@ class ExplainableRiskScorer:
        - Circular flows (cycles): up to 35 pts
        - Rapid fund movement (passthrough): up to 30 pts
        - Coordinated network cluster membership: up to 40 pts
-       - Structuring (near-threshold splitting): up to 30 pts
+       - Structuring (near-threshold splitting): up to 55 pts
        - Fan-in collector pattern: up to 25 pts
        - Fan-out distributor pattern: up to 25 pts
        - Long chain participation (>= 3 hops): up to 20 pts
@@ -204,7 +204,25 @@ class ExplainableRiskScorer:
        (Normalized to max 100 before weighting).
 
     Final Risk Score = (0.40 * ML) + (0.40 * Graph) + (0.20 * Behavioral)
+
+    Graph-evidence floor: the final score is never lower than GRAPH_EVIDENCE_FLOOR x Graph.
+    The ML component is an unsupervised outlier score, so an account that looks like several
+    others (four mules doing the same thing) is not an outlier and scores low on ML even when
+    the graph evidence is overwhelming. The floor stops that dilution: strong, corroborated
+    network evidence alone is enough for HIGH, while CRITICAL still needs the other signals.
     """
+
+    GRAPH_EVIDENCE_FLOOR: float = 0.75
+    # Each of these is enough for an alert on its own through the graph-evidence floor
+    CONTEXT_PATTERN_POINTS = {
+        "location_anomaly": 55.0,     # possible account takeover from a risk area (protective alert)
+        "takeover_collector": 95.0,   # collects from several suspected takeovers: HIGH on its own
+        "hundi_operator": 95.0,       # recurring informal remittance payout: HIGH on its own
+        "hundi_funder": 55.0,         # funds a suspected hundi operator
+    }
+    BUSINESS_TIERS = ("agent", "merchant")
+    # An agent also receives many near-threshold cash-outs from unrelated customers every day
+    BUSINESS_AS_USUAL_PATTERNS = ("fan_in", "fan_out", "rapid_movement", "structuring")
 
     WEIGHT_ML: float = 0.40
     WEIGHT_GRAPH: float = 0.40
@@ -255,8 +273,18 @@ class ExplainableRiskScorer:
         is_ml_anomaly: bool,
         feature_row: Dict[str, Any],
         pattern_flags: Dict[str, bool],
+        account_tier: str = "personal",
     ) -> Tuple[float, str, Dict[str, float]]:
-        """Calculates final explainable risk score (0-100) and risk tier."""
+        """Calculates final explainable risk score (0-100) and risk tier.
+
+        account_tier is the KYC account type. For agents and merchants, collecting from many
+        customers, paying out to many and turning money around quickly is the business itself,
+        so fan-in, fan-out, rapid movement and near-threshold collection are not counted as suspicious for those tiers
+        (the Phase 2 bias check showed they otherwise flag almost every legitimate agent).
+        """
+        if account_tier in self.BUSINESS_TIERS:
+            pattern_flags = {k: v for k, v in pattern_flags.items() if k not in self.BUSINESS_AS_USUAL_PATTERNS}
+            feature_row = {**feature_row, "structuring_detected": 0}
         # 1. ML component (0-100)
         c_ml = float(ml_score)
 
@@ -269,11 +297,15 @@ class ExplainableRiskScorer:
         if pattern_flags.get("coordinated_network", False):
             graph_pts += 40.0
         if pattern_flags.get("structuring", False) or feature_row.get("structuring_detected", 0) > 0:
-            graph_pts += 30.0
+            graph_pts += 55.0  # enough for a MEDIUM alert on its own through the evidence floor
         if pattern_flags.get("fan_in", False):
             graph_pts += 25.0
         if pattern_flags.get("fan_out", False):
             graph_pts += 25.0
+        # Context detectors (ml.context_risk): measured against the account's own history
+        for pattern, points in self.CONTEXT_PATTERN_POINTS.items():
+            if pattern_flags.get(pattern, False):
+                graph_pts += points
         if feature_row.get("chain_length", 0) >= 3:
             graph_pts += 20.0
         if feature_row.get("suspicious_neighbor_count", 0) >= 2:
@@ -322,7 +354,8 @@ class ExplainableRiskScorer:
         c_beh = min(100.0, beh_pts)
 
         # Weighted combination
-        final_score = (self.w_ml * c_ml) + (self.w_graph * c_graph) + (self.w_beh * c_beh)
+        weighted_score = (self.w_ml * c_ml) + (self.w_graph * c_graph) + (self.w_beh * c_beh)
+        final_score = max(weighted_score, self.GRAPH_EVIDENCE_FLOOR * c_graph)
         final_score = round(min(100.0, max(0.0, final_score)), 2)
 
         tier = RiskLevel.from_score(final_score)
