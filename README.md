@@ -162,6 +162,8 @@ Everything below was added after the Phase 1 judge feedback. The measured number
 | Temporal graph | Time-ordered flow tracing: follows money hop by hop, finds flow chains and loops in one pass | `ml/temporal_flow.py` |
 | Features | 83 features per account: transactional, temporal, graph, 2-hop neighbourhood, account type | `ml/feature_store.py` |
 | Models | Trained gradient-boosting classifier with per-account drivers, compared against rules, graph detectors, IsolationForest and a random forest | `ml/supervised.py`, `ml/evaluation.py` |
+| Account takeover | Risk-area detector scored against each customer's own baseline (usual areas, handset, spending); residents of a risk area are not flagged | `ml/context_risk.py`, `data/config/risk_areas.json` |
+| Hundi | Detector for recurring informal remittance payout through an agent or wallet; licensed remittance payout is excluded | `ml/context_risk.py` |
 | Fairness | Bias check across account tiers and districts; the score is now tier-aware | `ml/evaluation.py`, `ml/model.py` |
 | Scale | Throughput and latency benchmark up to about one million transactions | `ml/benchmark.py` |
 
@@ -177,7 +179,7 @@ For password sign-in or to turn demo sign-in off, copy `.env.example` to `.env`.
 ### Tests and evaluation
 
 ```bash
-python -m pytest -q            # 67 Python tests
+python -m pytest -q            # 71 Python tests
 cd backend && npm test         # 10 API tests: auth, roles, masking, audit chain, case workflow
 python -m ml.evaluation        # model comparison, bias check (about 6 minutes)
 python -m ml.benchmark --api http://localhost:5001   # throughput and API latency

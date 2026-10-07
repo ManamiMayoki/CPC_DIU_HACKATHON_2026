@@ -189,7 +189,7 @@ class ExplainableRiskScorer:
        - Circular flows (cycles): up to 35 pts
        - Rapid fund movement (passthrough): up to 30 pts
        - Coordinated network cluster membership: up to 40 pts
-       - Structuring (near-threshold splitting): up to 30 pts
+       - Structuring (near-threshold splitting): up to 55 pts
        - Fan-in collector pattern: up to 25 pts
        - Fan-out distributor pattern: up to 25 pts
        - Long chain participation (>= 3 hops): up to 20 pts
@@ -213,8 +213,16 @@ class ExplainableRiskScorer:
     """
 
     GRAPH_EVIDENCE_FLOOR: float = 0.75
+    # Each of these is enough for an alert on its own through the graph-evidence floor
+    CONTEXT_PATTERN_POINTS = {
+        "location_anomaly": 55.0,     # possible account takeover from a risk area (protective alert)
+        "takeover_collector": 95.0,   # collects from several suspected takeovers: HIGH on its own
+        "hundi_operator": 95.0,       # recurring informal remittance payout: HIGH on its own
+        "hundi_funder": 55.0,         # funds a suspected hundi operator
+    }
     BUSINESS_TIERS = ("agent", "merchant")
-    BUSINESS_AS_USUAL_PATTERNS = ("fan_in", "fan_out", "rapid_movement")
+    # An agent also receives many near-threshold cash-outs from unrelated customers every day
+    BUSINESS_AS_USUAL_PATTERNS = ("fan_in", "fan_out", "rapid_movement", "structuring")
 
     WEIGHT_ML: float = 0.40
     WEIGHT_GRAPH: float = 0.40
@@ -271,11 +279,12 @@ class ExplainableRiskScorer:
 
         account_tier is the KYC account type. For agents and merchants, collecting from many
         customers, paying out to many and turning money around quickly is the business itself,
-        so fan-in, fan-out and rapid movement are not counted as suspicious for those tiers
+        so fan-in, fan-out, rapid movement and near-threshold collection are not counted as suspicious for those tiers
         (the Phase 2 bias check showed they otherwise flag almost every legitimate agent).
         """
         if account_tier in self.BUSINESS_TIERS:
             pattern_flags = {k: v for k, v in pattern_flags.items() if k not in self.BUSINESS_AS_USUAL_PATTERNS}
+            feature_row = {**feature_row, "structuring_detected": 0}
         # 1. ML component (0-100)
         c_ml = float(ml_score)
 
@@ -288,11 +297,15 @@ class ExplainableRiskScorer:
         if pattern_flags.get("coordinated_network", False):
             graph_pts += 40.0
         if pattern_flags.get("structuring", False) or feature_row.get("structuring_detected", 0) > 0:
-            graph_pts += 30.0
+            graph_pts += 55.0  # enough for a MEDIUM alert on its own through the evidence floor
         if pattern_flags.get("fan_in", False):
             graph_pts += 25.0
         if pattern_flags.get("fan_out", False):
             graph_pts += 25.0
+        # Context detectors (ml.context_risk): measured against the account's own history
+        for pattern, points in self.CONTEXT_PATTERN_POINTS.items():
+            if pattern_flags.get(pattern, False):
+                graph_pts += points
         if feature_row.get("chain_length", 0) >= 3:
             graph_pts += 20.0
         if feature_row.get("suspicious_neighbor_count", 0) >= 2:

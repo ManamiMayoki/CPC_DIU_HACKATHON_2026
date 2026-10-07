@@ -97,6 +97,34 @@ def generate_account_evidence(
         else:
             evidence.append("Structuring detected: repeated transactions kept just under the monitoring threshold.")
 
+    if "location_anomaly" in active_patterns:
+        d = pattern_details.get("location_anomaly", {})
+        usual = ", ".join(d.get("usual_areas", [])) or "elsewhere"
+        evidence.append(
+            f"Possible account takeover: the wallet normally transacts from {usual} but suddenly moved "
+            f"BDT {d.get('outflow_24h', 0):,.0f} in 24 hours from risk area {d.get('risk_area')} "
+            f"({'; '.join(d.get('signals', [])[1:]) or 'unusual for this customer'}). Protective alert: confirm with the customer."
+        )
+    if "takeover_collector" in active_patterns:
+        d = pattern_details.get("takeover_collector", {})
+        evidence.append(
+            f"Takeover collector: received BDT {d.get('amount_collected', 0):,.0f} from {d.get('victim_count')} wallets "
+            f"during suspected account takeovers in {', '.join(d.get('risk_areas', []))}."
+        )
+    if "hundi_operator" in active_patterns:
+        d = pattern_details.get("hundi_operator", {})
+        evidence.append(
+            f"Hundi-style payout: {d.get('informal_inflow_count')} large informal transfers (BDT {d.get('informal_inflow_total', 0):,.0f}) "
+            f"from {len(d.get('funders', []))} funder(s) were paid out to {d.get('beneficiary_count')} beneficiaries over {d.get('cycles')} cycles; "
+            f"{round(100 * d.get('repeat_beneficiary_share', 0))}% of beneficiaries were paid in more than one cycle. "
+            f"No licensed inward-remittance or distributor funding is involved."
+        )
+    if "hundi_funder" in active_patterns:
+        d = pattern_details.get("hundi_funder", {})
+        evidence.append(
+            f"Hundi funder: sent {d.get('transfers')} large transfers (BDT {d.get('amount', 0):,.0f}) to suspected hundi operator {d.get('operator')}."
+        )
+
     if "coordinated_network" in active_patterns:
         evidence.append(
             "Coordinated network membership: account is part of a densely interconnected transaction cluster."
@@ -205,6 +233,14 @@ def run_pipeline(
     graph_summary = graph_result.get("graph_summary", {})
     patterns = graph_result.get("patterns", {})
 
+    # 2b. Context detectors on the transaction stream (risk-area takeover, hundi networks)
+    from data.synthetic.profiles import infer_tier
+    from ml.context_risk import run_context_detectors
+
+    all_accounts = {tx["sender_id"] for tx in valid_txs} | {tx["receiver_id"] for tx in valid_txs}
+    tiers = account_tiers or {str(acc): infer_tier(str(acc)) for acc in all_accounts}
+    patterns = {**patterns, **run_context_detectors(valid_txs, tiers)}
+
     # Extract account pattern mapping
     # account_id -> list of pattern names
     account_patterns: Dict[str, List[str]] = {}
@@ -247,9 +283,6 @@ def run_pipeline(
 
     # 4b. Supervised classifier trained on the labelled synthetic MFS networks. Optional: if the
     # model cannot be loaded the pipeline falls back to the unsupervised score alone.
-    from data.synthetic.profiles import infer_tier
-
-    tiers = account_tiers or {str(acc): infer_tier(str(acc)) for acc in combined_features_df.index}
     supervised_probs: Dict[str, float] = {}
     supervised_drivers: Dict[str, List[Dict[str, Any]]] = {}
     supervised_threshold: Optional[float] = None

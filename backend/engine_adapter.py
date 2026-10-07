@@ -140,6 +140,26 @@ def get_demo_scenarios_metadata() -> List[Dict[str, Any]]:
             "description": "8 feeder wallets -> collector hub -> 4 mule wallets -> cash-out agent -> back to the hub, all within about two hours.",
             "benchmark_note": "Fan-in, structuring, rapid movement, chain and a time-ordered loop combine into a CRITICAL score."
         },
+        {
+            "id": "HUNDI",
+            "name": "Hundi Agent (Informal Remittance)",
+            "target_account": "ACC_HUNDI_AGENT",
+            "expected_pattern": "hundi_operator",
+            "severity": "HIGH",
+            "badge_color": "red",
+            "description": "Two local funders send large informal transfers to an agent, who pays the same six families within hours, two weeks running.",
+            "benchmark_note": "Flagged on recurrence and a stable beneficiary set; licensed inward remittance and distributor float are excluded."
+        },
+        {
+            "id": "ACCOUNT_TAKEOVER",
+            "name": "Risk-Area Account Takeover",
+            "target_account": "ACC_TKO_COLLECTOR",
+            "expected_pattern": "takeover_collector",
+            "severity": "HIGH",
+            "badge_color": "red",
+            "description": "Three wallets that always transact from their home area are emptied from a risk area on new handsets into one collector.",
+            "benchmark_note": "Scored against each customer's own baseline: ACC_TKO_RESIDENT, who lives in the risk area, is not flagged."
+        },
     ]
 
 
@@ -289,6 +309,38 @@ def build_enhanced_payload(
             "description": "Several transactions kept just under the 10,000 threshold within 24 hours to avoid monitoring.",
             "severity": "HIGH",
             "badge_color": "amber",
+        },
+        {
+            "id": "hundi_operator",
+            "name": "Hundi Operator",
+            "title": "Hundi Payout",
+            "description": "Large informal transfers from a few funders paid out to the same beneficiaries cycle after cycle, outside licensed remittance.",
+            "severity": "CRITICAL",
+            "badge_color": "red",
+        },
+        {
+            "id": "hundi_funder",
+            "name": "Hundi Funder",
+            "title": "Hundi Funder",
+            "description": "Repeatedly sends large transfers to a suspected hundi operator.",
+            "severity": "HIGH",
+            "badge_color": "amber",
+        },
+        {
+            "id": "location_anomaly",
+            "name": "Risk-Area Takeover",
+            "title": "Possible Takeover",
+            "description": "A wallet suddenly active from a listed risk area, outside the customer's own baseline, with a new handset or a fast drain. Protective alert.",
+            "severity": "HIGH",
+            "badge_color": "amber",
+        },
+        {
+            "id": "takeover_collector",
+            "name": "Takeover Collector",
+            "title": "Takeover Collector",
+            "description": "Collects money from several wallets during suspected account takeovers.",
+            "severity": "CRITICAL",
+            "badge_color": "red",
         },
         {
             "id": "coordinated_network",

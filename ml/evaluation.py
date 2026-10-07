@@ -48,6 +48,7 @@ for p in (PROJECT_ROOT, GRAPH_DIR):
 
 from data.synthetic.mfs_generator import THRESHOLD, TYPOLOGIES, TYPOLOGY_LABELS, generate_mfs_dataset  # noqa: E402
 from ml.feature_store import FEATURE_FAMILIES, build_account_features, feature_family, transactions_to_frame  # noqa: E402
+from ml.context_risk import run_context_detectors  # noqa: E402
 from ml.inference import run_pipeline  # noqa: E402
 from ml.model import AnomalyDetector  # noqa: E402
 from ml.supervised import (  # noqa: E402
@@ -167,6 +168,11 @@ def prepare(seed: int, size: Dict[str, Any], exclude: Optional[Sequence[str]] = 
         "district": meta["district"].values,
         "rules": rules_baseline(dataset.transactions, features),
     }
+    context = run_context_detectors(dataset.transactions, tiers)
+    bundle["context"] = {name: np.isin(features.index.values, res["flagged_accounts"]) for name, res in context.items()}
+    bundle["role"] = meta["role"].fillna("").values
+    for flag in ("takeover_victim", "formal_remittance_agent", "risk_area_visitor"):
+        bundle[flag] = meta[flag].values.astype(bool)
     if product:
         # Phase 1 = static-graph search + IsolationForest; current = flow tracing + trained classifier
         for key, temporal, supervised in (("phase1", False, False), ("current", None, True)):
@@ -382,6 +388,58 @@ def evaluate(quick: bool = False) -> Dict[str, Any]:
         ),
     }
 
+    log("context detectors (risk-area takeover, hundi)")
+    role_all = np.concatenate([b["role"] for b in tests])
+
+    def pooled(key: str) -> np.ndarray:
+        return np.concatenate([b[key] for b in tests])
+
+    def detector_metrics(name: str, truth: np.ndarray) -> Dict[str, Any]:
+        flagged = np.concatenate([b["context"][name] for b in tests])
+        tp = int((flagged & truth).sum())
+        fp = int((flagged & ~truth).sum())
+        return {
+            "true_cases": int(truth.sum()),
+            "flagged": int(flagged.sum()),
+            "true_positives": tp,
+            "false_positives": fp,
+            "precision": tp / max(tp + fp, 1),
+            "recall": tp / max(int(truth.sum()), 1),
+            "false_positive_rate": fp / max(int((~truth).sum()), 1),
+        }
+
+    takeover_flags = np.concatenate([b["context"]["location_anomaly"] for b in tests])
+    hundi_flags = np.concatenate([b["context"]["hundi_operator"] for b in tests])
+    residents = np.isin(district_all, [12, 13]) & (tier_all == "personal")
+    context_detectors = {
+        "location_anomaly": {
+            "label": "Risk-area account takeover (customer at risk)",
+            **detector_metrics("location_anomaly", pooled("takeover_victim")),
+            "legitimate_lookalikes": {
+                "risk_area_residents": int(residents.sum()),
+                "risk_area_residents_flagged": int((takeover_flags & residents & ~pooled("takeover_victim")).sum()),
+                "risk_area_visitors": int(pooled("risk_area_visitor").sum()),
+                "risk_area_visitors_flagged": int((takeover_flags & pooled("risk_area_visitor") & ~pooled("takeover_victim")).sum()),
+            },
+        },
+        "takeover_collector": {"label": "Takeover collector", **detector_metrics("takeover_collector", role_all == "takeover_collector")},
+        "hundi_operator": {
+            "label": "Hundi operator",
+            **detector_metrics("hundi_operator", role_all == "operator"),
+            "legitimate_lookalikes": {
+                "licensed_remittance_agents": int(pooled("formal_remittance_agent").sum()),
+                "licensed_remittance_agents_flagged": int((hundi_flags & pooled("formal_remittance_agent")).sum()),
+            },
+        },
+        "hundi_funder": {"label": "Hundi funder", **detector_metrics("hundi_funder", role_all == "feeder")},
+        "note": (
+            "Both detectors compare an account with its own history. A takeover alert needs at least two signals "
+            "(area new for this customer, new handset, unusually fast outflow, new receivers); a hundi alert needs "
+            "informal funding, a payout to five or more beneficiaries and the same beneficiaries paid in two or more cycles. "
+            "The simulated hundi and takeover cases are clean, so these figures are an upper bound."
+        ),
+    }
+
     # Analyst workload: alerts needed to reach the rules' recall, and recall at the rules' alert budget
     order = np.argsort(-scores_all["gbm_graph"])
     hits = np.cumsum(y_all[order] == 1)
@@ -450,6 +508,7 @@ def evaluate(quick: bool = False) -> Dict[str, Any]:
         "feature_ablation": ablation,
         "feature_importance": feature_importance,
         "unseen_typology": unseen,
+        "context_detectors": context_detectors,
         "bias": bias,
         "workload": workload,
         "limitations": [

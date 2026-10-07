@@ -1232,6 +1232,26 @@
     "timestamp": "2026-03-02T10:41:04Z"
   },
   {
+    "transaction_id": "TX_000191",
+    "sender_id": "ACC_HUNDI_FUNDER_01",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 18035.38,
+    "timestamp": "2026-03-02T10:45:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_01-1"
+  },
+  {
+    "transaction_id": "TX_000193",
+    "sender_id": "ACC_HUNDI_FUNDER_02",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 23120.69,
+    "timestamp": "2026-03-02T10:53:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_02-1"
+  },
+  {
     "transaction_id": "TX_000107",
     "sender_id": "ACC_NORM_002",
     "receiver_id": "ACC_NORM_010",
@@ -1244,6 +1264,16 @@
     "receiver_id": "ACC_NORM_012",
     "amount": 112.94,
     "timestamp": "2026-03-02T11:18:45Z"
+  },
+  {
+    "transaction_id": "TX_000192",
+    "sender_id": "ACC_HUNDI_FUNDER_01",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 19791.68,
+    "timestamp": "2026-03-02T11:34:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_01-1"
   },
   {
     "transaction_id": "TX_000109",
@@ -1260,11 +1290,41 @@
     "timestamp": "2026-03-02T11:47:55Z"
   },
   {
+    "transaction_id": "TX_000194",
+    "sender_id": "ACC_HUNDI_FUNDER_02",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 21229.32,
+    "timestamp": "2026-03-02T11:54:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_02-1"
+  },
+  {
+    "transaction_id": "TX_000235",
+    "sender_id": "ACC_TKO_RESIDENT",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 996.23,
+    "timestamp": "2026-03-02T12:01:00Z",
+    "tx_type": "payment",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_RESIDENT-1"
+  },
+  {
     "transaction_id": "TX_000111",
     "sender_id": "ACC_NORM_006",
     "receiver_id": "ACC_NORM_014",
     "amount": 22.15,
     "timestamp": "2026-03-02T12:14:03Z"
+  },
+  {
+    "transaction_id": "TX_000227",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 873.54,
+    "timestamp": "2026-03-02T12:23:00Z",
+    "tx_type": "payment",
+    "location": "Zone-04",
+    "device_id": "DEV-TKO_VICTIM_03-1"
   },
   {
     "transaction_id": "TX_000112",
@@ -1279,6 +1339,26 @@
     "receiver_id": "ACC_NORM_009",
     "amount": 88.01,
     "timestamp": "2026-03-02T13:05:04Z"
+  },
+  {
+    "transaction_id": "TX_000219",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 299.52,
+    "timestamp": "2026-03-02T13:06:00Z",
+    "tx_type": "payment",
+    "location": "Zone-03",
+    "device_id": "DEV-TKO_VICTIM_02-1"
+  },
+  {
+    "transaction_id": "TX_000198",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_04",
+    "amount": 12577.53,
+    "timestamp": "2026-03-02T13:07:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
   },
   {
     "transaction_id": "TX_000114",
@@ -1302,6 +1382,16 @@
     "timestamp": "2026-03-02T13:47:35Z"
   },
   {
+    "transaction_id": "TX_000196",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_02",
+    "amount": 12965.42,
+    "timestamp": "2026-03-02T13:56:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
     "transaction_id": "TX_000117",
     "sender_id": "ACC_NORM_008",
     "receiver_id": "ACC_NORM_001",
@@ -1309,11 +1399,41 @@
     "timestamp": "2026-03-02T14:02:11Z"
   },
   {
+    "transaction_id": "TX_000197",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_03",
+    "amount": 12760.91,
+    "timestamp": "2026-03-02T14:09:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000211",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 358.69,
+    "timestamp": "2026-03-02T14:14:00Z",
+    "tx_type": "payment",
+    "location": "Zone-02",
+    "device_id": "DEV-TKO_VICTIM_01-1"
+  },
+  {
     "transaction_id": "TX_000118",
     "sender_id": "ACC_NORM_011",
     "receiver_id": "ACC_NORM_009",
     "amount": 433.53,
     "timestamp": "2026-03-02T14:29:34Z"
+  },
+  {
+    "transaction_id": "TX_000200",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_06",
+    "amount": 13886.44,
+    "timestamp": "2026-03-02T14:43:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
   },
   {
     "transaction_id": "TX_000119",
@@ -1328,5 +1448,375 @@
     "receiver_id": "ACC_NORM_018",
     "amount": 172.26,
     "timestamp": "2026-03-02T14:46:08Z"
+  },
+  {
+    "transaction_id": "TX_000199",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_05",
+    "amount": 13710.63,
+    "timestamp": "2026-03-02T15:51:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000195",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_01",
+    "amount": 13414.41,
+    "timestamp": "2026-03-02T16:24:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000220",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 616.0,
+    "timestamp": "2026-03-03T11:10:00Z",
+    "tx_type": "payment",
+    "location": "Zone-03",
+    "device_id": "DEV-TKO_VICTIM_02-1"
+  },
+  {
+    "transaction_id": "TX_000228",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 584.01,
+    "timestamp": "2026-03-03T11:55:00Z",
+    "tx_type": "payment",
+    "location": "Zone-04",
+    "device_id": "DEV-TKO_VICTIM_03-1"
+  },
+  {
+    "transaction_id": "TX_000212",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 339.2,
+    "timestamp": "2026-03-03T14:35:00Z",
+    "tx_type": "payment",
+    "location": "Zone-02",
+    "device_id": "DEV-TKO_VICTIM_01-1"
+  },
+  {
+    "transaction_id": "TX_000236",
+    "sender_id": "ACC_TKO_RESIDENT",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 982.64,
+    "timestamp": "2026-03-03T15:49:00Z",
+    "tx_type": "payment",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_RESIDENT-1"
+  },
+  {
+    "transaction_id": "TX_000213",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 502.73,
+    "timestamp": "2026-03-04T11:41:00Z",
+    "tx_type": "payment",
+    "location": "Zone-02",
+    "device_id": "DEV-TKO_VICTIM_01-1"
+  },
+  {
+    "transaction_id": "TX_000221",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 244.67,
+    "timestamp": "2026-03-04T13:02:00Z",
+    "tx_type": "payment",
+    "location": "Zone-03",
+    "device_id": "DEV-TKO_VICTIM_02-1"
+  },
+  {
+    "transaction_id": "TX_000229",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 581.85,
+    "timestamp": "2026-03-04T13:39:00Z",
+    "tx_type": "payment",
+    "location": "Zone-04",
+    "device_id": "DEV-TKO_VICTIM_03-1"
+  },
+  {
+    "transaction_id": "TX_000237",
+    "sender_id": "ACC_TKO_RESIDENT",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 732.75,
+    "timestamp": "2026-03-04T13:57:00Z",
+    "tx_type": "payment",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_RESIDENT-1"
+  },
+  {
+    "transaction_id": "TX_000222",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 572.98,
+    "timestamp": "2026-03-05T11:58:00Z",
+    "tx_type": "payment",
+    "location": "Zone-03",
+    "device_id": "DEV-TKO_VICTIM_02-1"
+  },
+  {
+    "transaction_id": "TX_000238",
+    "sender_id": "ACC_TKO_RESIDENT",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 268.96,
+    "timestamp": "2026-03-05T14:09:00Z",
+    "tx_type": "payment",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_RESIDENT-1"
+  },
+  {
+    "transaction_id": "TX_000230",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 447.49,
+    "timestamp": "2026-03-05T14:12:00Z",
+    "tx_type": "payment",
+    "location": "Zone-04",
+    "device_id": "DEV-TKO_VICTIM_03-1"
+  },
+  {
+    "transaction_id": "TX_000214",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 189.06,
+    "timestamp": "2026-03-05T15:36:00Z",
+    "tx_type": "payment",
+    "location": "Zone-02",
+    "device_id": "DEV-TKO_VICTIM_01-1"
+  },
+  {
+    "transaction_id": "TX_000215",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 8121.11,
+    "timestamp": "2026-03-06T11:09:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_01-X7"
+  },
+  {
+    "transaction_id": "TX_000216",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 7877.48,
+    "timestamp": "2026-03-06T11:16:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000217",
+    "sender_id": "ACC_TKO_VICTIM_01",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 7201.29,
+    "timestamp": "2026-03-06T11:23:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_01-X7"
+  },
+  {
+    "transaction_id": "TX_000223",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 9325.17,
+    "timestamp": "2026-03-06T11:27:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_02-X7"
+  },
+  {
+    "transaction_id": "TX_000218",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 6985.25,
+    "timestamp": "2026-03-06T11:28:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000225",
+    "sender_id": "ACC_TKO_VICTIM_02",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 7838.95,
+    "timestamp": "2026-03-06T11:36:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_02-X7"
+  },
+  {
+    "transaction_id": "TX_000224",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 9045.41,
+    "timestamp": "2026-03-06T11:40:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000226",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 7603.78,
+    "timestamp": "2026-03-06T11:44:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000231",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 7991.65,
+    "timestamp": "2026-03-06T11:55:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_03-X7"
+  },
+  {
+    "transaction_id": "TX_000233",
+    "sender_id": "ACC_TKO_VICTIM_03",
+    "receiver_id": "ACC_TKO_COLLECTOR",
+    "amount": 10485.97,
+    "timestamp": "2026-03-06T12:00:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_VICTIM_03-X7"
+  },
+  {
+    "transaction_id": "TX_000232",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 7751.9,
+    "timestamp": "2026-03-06T12:07:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000234",
+    "sender_id": "ACC_TKO_COLLECTOR",
+    "receiver_id": "ACC_TKO_AGENT",
+    "amount": 10171.39,
+    "timestamp": "2026-03-06T12:14:00Z",
+    "tx_type": "cash_out",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_COLLECTOR-1"
+  },
+  {
+    "transaction_id": "TX_000239",
+    "sender_id": "ACC_TKO_RESIDENT",
+    "receiver_id": "ACC_TKO_SHOP",
+    "amount": 212.65,
+    "timestamp": "2026-03-06T13:54:00Z",
+    "tx_type": "payment",
+    "location": "Zone-13",
+    "device_id": "DEV-TKO_RESIDENT-1"
+  },
+  {
+    "transaction_id": "TX_000201",
+    "sender_id": "ACC_HUNDI_FUNDER_01",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 23043.03,
+    "timestamp": "2026-03-09T10:16:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_01-1"
+  },
+  {
+    "transaction_id": "TX_000203",
+    "sender_id": "ACC_HUNDI_FUNDER_02",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 18161.8,
+    "timestamp": "2026-03-09T10:50:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_02-1"
+  },
+  {
+    "transaction_id": "TX_000202",
+    "sender_id": "ACC_HUNDI_FUNDER_01",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 23884.33,
+    "timestamp": "2026-03-09T11:53:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_01-1"
+  },
+  {
+    "transaction_id": "TX_000204",
+    "sender_id": "ACC_HUNDI_FUNDER_02",
+    "receiver_id": "ACC_HUNDI_AGENT",
+    "amount": 21551.36,
+    "timestamp": "2026-03-09T12:09:00Z",
+    "tx_type": "send_money",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_FUNDER_02-1"
+  },
+  {
+    "transaction_id": "TX_000205",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_01",
+    "amount": 12005.85,
+    "timestamp": "2026-03-09T13:06:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000209",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_05",
+    "amount": 13531.65,
+    "timestamp": "2026-03-09T13:54:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000208",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_04",
+    "amount": 13220.54,
+    "timestamp": "2026-03-09T14:06:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000210",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_06",
+    "amount": 14793.15,
+    "timestamp": "2026-03-09T14:26:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000206",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_02",
+    "amount": 12218.83,
+    "timestamp": "2026-03-09T14:49:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
+  },
+  {
+    "transaction_id": "TX_000207",
+    "sender_id": "ACC_HUNDI_AGENT",
+    "receiver_id": "ACC_HUNDI_FAMILY_03",
+    "amount": 12408.26,
+    "timestamp": "2026-03-09T14:58:00Z",
+    "tx_type": "cash_in",
+    "location": "Zone-05",
+    "device_id": "DEV-HUNDI_AGENT-1"
   }
 ]

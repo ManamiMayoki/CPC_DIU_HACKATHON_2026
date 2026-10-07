@@ -32,6 +32,7 @@ TYPOLOGIES = [
     "circular_layering",
     "scam_collection",
     "low_slow_mule_chain",
+    "account_takeover",
 ]
 
 TYPOLOGY_LABELS = {
@@ -41,7 +42,14 @@ TYPOLOGY_LABELS = {
     "circular_layering": "Circular layering",
     "scam_collection": "Scam / betting collection account",
     "low_slow_mule_chain": "Low-and-slow mule chain",
+    "account_takeover": "Risk-area account takeover (collector)",
 }
+# Districts 12 and 13 are the demo risk areas (see data/config/risk_areas.json)
+RISK_DISTRICTS = (12, 13)
+
+
+def area_name(district: int) -> str:
+    return f"Zone-{district + 1:02d}"
 
 
 @dataclass
@@ -112,6 +120,9 @@ class MFSNetworkGenerator:
                     "typology": None,
                     "role": None,
                     "evasive": False,
+                    "takeover_victim": False,
+                    "formal_remittance_agent": False,
+                    "risk_area_visitor": False,
                 }
         self.by_district: Dict[str, Dict[int, List[str]]] = {"personal": {}, "agent": {}, "merchant": {}}
         for acc, info in self.accounts.items():
@@ -119,14 +130,18 @@ class MFSNetworkGenerator:
                 continue
             self.by_district[info["tier"]].setdefault(info["district"], []).append(acc)
 
-        self.tx: List[Tuple[float, str, str, float, str]] = []
+        self.tx: List[Tuple[float, str, str, float, str, str, str]] = []
         self._used_for_fraud: set = set()
 
     # ------------------------------------------------------------------ helpers
-    def _add(self, t: float, sender: str, receiver: str, amount: float, tx_type: str) -> None:
+    def _add(self, t: float, sender: str, receiver: str, amount: float, tx_type: str,
+             location: Optional[str] = None, device: Optional[str] = None) -> None:
         if sender == receiver or amount <= 0 or not (0 <= t < self.horizon):
             return
-        self.tx.append((float(t), sender, receiver, round(float(amount), 2), tx_type))
+        # By default a wallet transacts from its home area on its own handset
+        location = location or area_name(self.accounts[sender]["district"])
+        device = device or f"DEV-{sender[4:]}-1"
+        self.tx.append((float(t), sender, receiver, round(float(amount), 2), tx_type, location, device))
 
     def _daytime(self, n: int = 1) -> np.ndarray:
         """Random times with a daytime peak (most activity 09:00-22:00, a little at night)."""
@@ -289,28 +304,36 @@ class MFSNetworkGenerator:
                       forwarded * rng.uniform(0.95, 0.99), "cash_out")
 
     def _digital_hundi(self) -> None:
+        """Recurring informal remittance payout, usually run from an agent wallet."""
         rng = self.rng
         n_feeders = int(rng.integers(2, 4))
-        operator, *feeders = self._pick_clean_personal(1 + n_feeders)
+        feeders = self._pick_clean_personal(n_feeders)
+        if rng.random() < 0.75:
+            operator = self.agents[int(rng.integers(0, len(self.agents)))]
+            if self.accounts[operator]["label"]:
+                operator = self._pick_clean_personal(1)[0]
+        else:
+            operator = self._pick_clean_personal(1)[0]
+        payout_type = "cash_in" if self.accounts[operator]["tier"] == "agent" else "send_money"
         self._mark(operator, "digital_hundi", "operator")
         for f in feeders:
             self._mark(f, "digital_hundi", "feeder")
-        t0 = self._start()
-        pool = 0.0
-        for feeder in feeders:
-            for _ in range(int(rng.integers(3, 7))):
-                amount = float(rng.uniform(12000, 25000))
-                self._add(t0 + rng.uniform(0, 8 * 3600), feeder, operator, amount, "send_money")
-                pool += amount
-        beneficiaries = self._victims(int(rng.integers(10, 30)))
-        share = pool * 0.96 / max(len(beneficiaries), 1)
-        for b in beneficiaries:
-            t = t0 + 8 * 3600 + rng.uniform(600, 6 * 3600)
-            amount = share * rng.uniform(0.7, 1.3)
-            self._add(t, operator, b, amount, "send_money")
-            if rng.random() < 0.6:
-                agents = self._local("agent", self.accounts[b]["district"])
-                self._add(t + rng.uniform(900, 8 * 3600), b, agents[int(rng.integers(0, len(agents)))], amount * 0.97, "cash_out")
+        regulars = self._victims(int(rng.integers(8, 20)))
+        first = float(rng.integers(0, max(1, self.n_days // 2 - 2)) * 86400 + rng.uniform(9, 16) * 3600)
+        for cycle in range(2 if self.n_days >= 10 else 1):
+            t0 = first + cycle * rng.uniform(5.5, 7.5) * 86400
+            pool = 0.0
+            for feeder in feeders:
+                for _ in range(int(rng.integers(2, 5))):
+                    amount = float(rng.uniform(12000, 25000))
+                    self._add(t0 + rng.uniform(0, 4 * 3600), feeder, operator, amount, "send_money")
+                    pool += amount
+            # Most families are paid every cycle; a few change
+            paid = [b for b in regulars if rng.random() < 0.85] + self._victims(int(rng.integers(0, 3)))
+            share = pool * 0.95 / max(len(paid), 1)
+            for b in paid:
+                t = t0 + 4 * 3600 + rng.uniform(600, 8 * 3600)
+                self._add(t, operator, b, float(np.clip(share * rng.uniform(0.7, 1.3), 3200, 48000)), payout_type)
 
     def _structuring(self, evasive: bool) -> None:
         rng = self.rng
@@ -408,6 +431,78 @@ class MFSNetworkGenerator:
             agents = self._local("agent", self.accounts[path[-1]]["district"])
             self._add(t, path[-1], agents[int(rng.integers(0, len(agents)))], amount, "cash_out")
 
+    def _account_takeover(self) -> None:
+        """Compromised handsets emptied from a risk area into one collector wallet."""
+        rng = self.rng
+        risk_district = int(RISK_DISTRICTS[int(rng.integers(0, len(RISK_DISTRICTS)))])
+        collector = self._pick_clean_personal(1)[0]
+        self.accounts[collector]["district"] = risk_district
+        self._mark(collector, "account_takeover", "takeover_collector")
+        agents = self._local("agent", risk_district)
+        t0 = float(rng.integers(self.n_days // 2, self.n_days - 1) * 86400 + rng.uniform(8, 20) * 3600)
+        victims = [v for v in self._victims(int(rng.integers(4, 9))) if self.accounts[v]["district"] not in RISK_DISTRICTS]
+        for victim in victims:
+            self.accounts[victim]["takeover_victim"] = True
+            t = t0 + rng.uniform(0, 30 * 3600)
+            stolen = f"DEV-{victim[4:]}-X{int(rng.integers(100, 999))}"
+            for _ in range(int(rng.integers(1, 4))):
+                t += rng.uniform(120, 2400)
+                amount = float(rng.uniform(3000, 18000))
+                self._add(t, victim, collector, amount, "send_money", area_name(risk_district), stolen)
+                if rng.random() < 0.7:
+                    self._add(t + rng.uniform(300, 3600), collector, agents[int(rng.integers(0, len(agents)))],
+                              amount * rng.uniform(0.9, 0.98), "cash_out")
+
+    def _context_lookalikes(self) -> None:
+        """Legitimate activity that resembles the takeover and hundi patterns."""
+        rng = self.rng
+        outside = [a for a in self.personal if self.accounts[a]["district"] not in RISK_DISTRICTS]
+        # Travellers: a few ordinary payments from a risk area on their own handset
+        for i in rng.choice(len(outside), size=max(3, len(outside) // 30), replace=False):
+            acc = outside[i]
+            self.accounts[acc]["risk_area_visitor"] = True
+            zone = area_name(int(RISK_DISTRICTS[int(rng.integers(0, len(RISK_DISTRICTS)))]))
+            t = float(rng.integers(3, self.n_days) * 86400 + rng.uniform(9, 21) * 3600)
+            for _ in range(int(rng.integers(1, 4))):
+                merchant = self.merchants[int(rng.integers(0, len(self.merchants)))]
+                self._add(t, acc, merchant, float(self._amount(600, 0.7, 50, 6000)[0]), "payment", zone)
+                t += rng.uniform(1800, 6 * 3600)
+        # Handset upgrades at home: new device, usual area, usual spending
+        for i in rng.choice(len(self.personal), size=max(3, len(self.personal) // 60), replace=False):
+            acc = self.personal[i]
+            t = float(rng.integers(4, self.n_days) * 86400 + rng.uniform(9, 21) * 3600)
+            for _ in range(int(rng.integers(2, 5))):
+                friend = self.personal[int(rng.integers(0, len(self.personal)))]
+                self._add(t, acc, friend, float(self._amount(900, 0.8, 50, 12000)[0]), "send_money", None, f"DEV-{acc[4:]}-2")
+                t += rng.uniform(3600, 30 * 3600)
+        # Licensed remittance payout: an agent funded by a remittance partner pays the same families every week
+        for i in rng.choice(len(self.agents), size=max(2, len(self.agents) // 12), replace=False):
+            agent = self.agents[i]
+            if self.accounts[agent]["label"]:
+                continue
+            self.accounts[agent]["formal_remittance_agent"] = True
+            partner = self.corporates[int(rng.integers(0, len(self.corporates)))]
+            families = self._victims(int(rng.integers(8, 20)))
+            for week in range(max(1, self.n_days // 7)):
+                t0 = week * 7 * 86400 + rng.uniform(1, 5) * 86400 + rng.uniform(9, 15) * 3600
+                for _ in range(int(rng.integers(3, 6))):
+                    self._add(t0 + rng.uniform(0, 3 * 3600), partner, agent, float(rng.uniform(15000, 40000)), "inward_remittance")
+                for family in families:
+                    if rng.random() < 0.85:
+                        self._add(t0 + 3 * 3600 + rng.uniform(600, 8 * 3600), agent, family, float(rng.uniform(4000, 20000)), "cash_in")
+        # One-off family payouts (a wedding, a land sale): large informal inflows paid out once
+        for i in rng.choice(len(self.personal), size=max(3, len(self.personal) // 500), replace=False):
+            acc = self.personal[i]
+            if acc in self._used_for_fraud:
+                continue
+            relatives = self._victims(2)
+            t0 = float(rng.integers(1, self.n_days - 1) * 86400 + rng.uniform(9, 16) * 3600)
+            for relative in relatives:
+                for _ in range(2):
+                    self._add(t0 + rng.uniform(0, 3 * 3600), relative, acc, float(rng.uniform(12000, 25000)), "send_money")
+            for payee in self._victims(int(rng.integers(5, 9))):
+                self._add(t0 + 3 * 3600 + rng.uniform(600, 10 * 3600), acc, payee, float(rng.uniform(4000, 12000)), "send_money")
+
     def _fraud_traffic(self) -> None:
         size = len(self.personal) / 6000.0 * self.fraud_scale
         plan = [
@@ -419,6 +514,7 @@ class MFSNetworkGenerator:
             ("circular_layering", 6, lambda: self._circular(True)),
             ("scam_collection", 10, self._scam_collection),
             ("low_slow_mule_chain", 7, self._low_slow_chain),
+            ("account_takeover", 8, self._account_takeover),
         ]
         for typology, count, make in plan:
             if typology in self.exclude:
@@ -430,10 +526,11 @@ class MFSNetworkGenerator:
     def generate(self) -> MFSDataset:
         self._fraud_traffic()  # fraud first so perpetrators also get ordinary activity as cover
         self._normal_traffic()
+        self._context_lookalikes()
         self.tx.sort(key=lambda row: row[0])
         transactions = []
         seen = set()
-        for i, (t, sender, receiver, amount, tx_type) in enumerate(self.tx, start=1):
+        for i, (t, sender, receiver, amount, tx_type, location, device) in enumerate(self.tx, start=1):
             seen.add(sender)
             seen.add(receiver)
             transactions.append({
@@ -443,6 +540,8 @@ class MFSNetworkGenerator:
                 "amount": amount,
                 "timestamp": (BASE_TIME + datetime.timedelta(seconds=int(t))).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "tx_type": tx_type,
+                "location": location,
+                "device_id": device,
             })
         accounts = {acc: info for acc, info in self.accounts.items() if acc in seen}
         return MFSDataset(

@@ -223,6 +223,32 @@ export default function ModelEvaluation() {
         </div>
       </Panel>
 
+      {model.context_detectors && (
+        <Panel title="Risk-area account takeover and hundi detectors" subtitle={model.context_detectors.note}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={row}><th style={thLeft}>Detector</th><th style={th}>True cases</th><th style={th}>Flagged</th><th style={th}>Precision</th><th style={th}>Recall</th><th style={th}>False-positive rate</th></tr></thead>
+              <tbody>
+                {['location_anomaly', 'takeover_collector', 'hundi_operator', 'hundi_funder'].map((key) => {
+                  const d = model.context_detectors[key];
+                  return (
+                    <tr key={key} style={row}>
+                      <td style={tdLeft}>{d.label}</td><td style={td}>{d.true_cases}</td><td style={td}>{d.flagged}</td>
+                      <td style={td}>{pct(d.precision)}</td><td style={td}>{pct(d.recall)}</td><td style={td}>{pct(d.false_positive_rate, 3)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <ul style={{ margin: '14px 0 0', paddingLeft: '18px', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            <li>Customers who live in a risk area: {model.context_detectors.location_anomaly.legitimate_lookalikes.risk_area_residents_flagged} of {model.context_detectors.location_anomaly.legitimate_lookalikes.risk_area_residents.toLocaleString()} flagged.</li>
+            <li>Customers who only visited a risk area: {model.context_detectors.location_anomaly.legitimate_lookalikes.risk_area_visitors_flagged} of {model.context_detectors.location_anomaly.legitimate_lookalikes.risk_area_visitors.toLocaleString()} flagged.</li>
+            <li>Agents doing licensed remittance payout: {model.context_detectors.hundi_operator.legitimate_lookalikes.licensed_remittance_agents_flagged} of {model.context_detectors.hundi_operator.legitimate_lookalikes.licensed_remittance_agents} flagged.</li>
+          </ul>
+        </Panel>
+      )}
+
       <Panel title="Bias check across account tiers" subtitle="False-positive rate: the share of legitimate accounts of each tier that get an alert. The check found that the Phase 1 score flagged almost every legitimate agent; the current score is tier-aware. District is never a model input.">
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
