@@ -3,7 +3,9 @@
  * Connects frontend to Express backend with resilient fallback to pre-computed state.
  */
 
-const API_BASE = '/api';
+// VITE_API_URL (set at build time, e.g. on Vercel) points the dashboard at a backend on another
+// host. Left empty, calls go to /api on the same origin (nginx or the Vite dev proxy).
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
 const SESSION_KEY = 'cygnus_session';
 
 // ---------------------------------------------------------------------------
